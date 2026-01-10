@@ -1,0 +1,71 @@
+@page "/assignments"
+@inject AssignmentService AssignmentService
+@inject EmployeeService EmployeeService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Assignments</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Assignments</MudText>
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/assignments/new"))">
+            Add Assignment
+        </MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadAssignments">Load All</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadOverdue">Overdue</MudButton>
+    </MudStack>
+    <MudTable Items="@_assignments" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Asset Item</MudTh>
+            <MudTh>Employee</MudTh>
+            <MudTh>Assigned</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.AssetItemSerialNumber</MudTd>
+            <MudTd>@context.EmployeeName</MudTd>
+            <MudTd>@context.AssignedDate.ToShortDateString()</MudTd>
+            <MudTd>@context.AssignmentStatus</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/assignments/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteAssignment(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<AssignmentDto> _assignments = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAssignments();
+    }
+
+    private async Task LoadAssignments()
+    {
+        _assignments = await AssignmentService.GetAllAsync();
+    }
+
+    private async Task LoadOverdue()
+    {
+        _assignments = await AssignmentService.GetOverdueAsync();
+    }
+
+    private async Task DeleteAssignment(int id)
+    {
+        if (await AssignmentService.DeleteAsync(id))
+        {
+            Snackbar.Add("Assignment deleted.", Severity.Success);
+            await LoadAssignments();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete assignment.", Severity.Error);
+        }
+    }
+}

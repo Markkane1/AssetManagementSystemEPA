@@ -1,0 +1,65 @@
+@page "/directorates/new"
+@page "/directorates/edit/{Id:int}"
+@inject DirectorateService DirectorateService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Directorate" : "New Directorate")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Directorate" : "Create Directorate")</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/directorates"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool _isEdit => Id.HasValue;
+    private DirectorateDto _model = new();
+    private MudForm? _form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_isEdit)
+        {
+            var directorate = await DirectorateService.GetByIdAsync(Id!.Value);
+            if (directorate != null)
+            {
+                _model = directorate;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = _isEdit
+            ? await DirectorateService.UpdateAsync(_model)
+            : await DirectorateService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Directorate saved.", Severity.Success);
+            NavigationManager.NavigateTo("/directorates");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save directorate.", Severity.Error);
+        }
+    }
+}

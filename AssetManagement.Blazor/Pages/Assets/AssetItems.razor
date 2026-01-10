@@ -1,0 +1,133 @@
+@page "/asset-items"
+@inject AssetItemService AssetItemService
+@inject AssetService AssetService
+@inject LocationService LocationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Asset Items</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Asset Items</MudText>
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/asset-items/new"))">
+            Add Asset Item
+        </MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadUnassigned">Load Unassigned</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadItems">Load All</MudButton>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenTransferDialog">
+            Transfer Selected
+        </MudButton>
+    </MudStack>
+
+    <MudTable Items="@_items" Dense="true" Hover="true" MultiSelection="true" @bind-SelectedItems="_selectedItems">
+        <HeaderContent>
+            <MudTh>Tag</MudTh>
+            <MudTh>Serial</MudTh>
+            <MudTh>Asset</MudTh>
+            <MudTh>Location</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Tag</MudTd>
+            <MudTd>@context.SerialNumber</MudTd>
+            <MudTd>@context.AssetId</MudTd>
+            <MudTd>@context.LocationId</MudTd>
+            <MudTd>@context.Status</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/asset-items/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteItem(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+<MudDialog @bind-IsVisible="_transferDialogOpen">
+    <DialogContent>
+        <MudText Typo="Typo.h6">Transfer Asset Items</MudText>
+        <MudSelect T="int" Label="Target Location" @bind-Value="_transferLocationId" Class="mt-3">
+            @foreach (var location in _locations)
+            {
+                <MudSelectItem Value="@location.Id">@location.Name</MudSelectItem>
+            }
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="@ConfirmTransfer">Transfer</MudButton>
+        <MudButton Color="Color.Secondary" Variant="Variant.Text" OnClick="@CloseTransferDialog">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<AssetItemDto> _items = [];
+    private HashSet<AssetItemDto> _selectedItems = [];
+    private bool _transferDialogOpen;
+    private int _transferLocationId;
+    private List<LocationDto> _locations = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _locations = await LocationService.GetAllAsync();
+        await LoadItems();
+    }
+
+    private async Task LoadItems()
+    {
+        _items = await AssetItemService.GetAllAsync();
+    }
+
+    private async Task LoadUnassigned()
+    {
+        _items = await AssetItemService.GetUnassignedAsync();
+    }
+
+    private void OpenTransferDialog()
+    {
+        _transferDialogOpen = true;
+    }
+
+    private void CloseTransferDialog()
+    {
+        _transferDialogOpen = false;
+    }
+
+    private async Task ConfirmTransfer()
+    {
+        var ids = _selectedItems.Select(item => item.Id).ToArray();
+        if (ids.Length == 0 || _transferLocationId == 0)
+        {
+            Snackbar.Add("Select items and a target location.", Severity.Warning);
+            return;
+        }
+
+        var success = await AssetItemService.TransferAsync(ids, _transferLocationId);
+        if (success)
+        {
+            Snackbar.Add("Assets transferred.", Severity.Success);
+            _transferDialogOpen = false;
+            _selectedItems.Clear();
+            await LoadItems();
+        }
+        else
+        {
+            Snackbar.Add("Transfer failed.", Severity.Error);
+        }
+    }
+
+    private async Task DeleteItem(int id)
+    {
+        if (await AssetItemService.DeleteAsync(id))
+        {
+            Snackbar.Add("Asset item deleted.", Severity.Success);
+            await LoadItems();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete asset item.", Severity.Error);
+        }
+    }
+}

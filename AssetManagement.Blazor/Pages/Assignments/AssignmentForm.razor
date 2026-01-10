@@ -1,0 +1,152 @@
+@page "/assignments/new"
+@page "/assignments/edit/{Id:int}"
+@inject AssignmentService AssignmentService
+@inject AssetItemService AssetItemService
+@inject EmployeeService EmployeeService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Assignment" : "New Assignment")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Assignment" : "Create Assignment")</MudText>
+    <MudForm @ref="_form">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int" Label="Asset Item" @bind-Value="_model.AssetItemId">
+                    @foreach (var item in _assetItems)
+                    {
+                        <MudSelectItem Value="@item.Id">@item.SerialNumber</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int" Label="Employee" @bind-Value="_model.EmployeeId">
+                    @foreach (var employee in _employees)
+                    {
+                        <MudSelectItem Value="@employee.Id">@employee.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_assignedDate" Label="Assigned Date" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_returnedDate" Label="Returned Date" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_model.ReturnNotes" Label="Return Notes" Lines="2" />
+            </MudItem>
+        </MudGrid>
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/assignments"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+
+    @if (_isEdit)
+    {
+        <MudExpansionPanels Class="mt-6">
+            <MudExpansionPanel Text="Return Asset">
+                <MudDatePicker @bind-Date="_returnDate" Label="Return Date" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ReturnAsset" Class="mt-3">
+                    Return Asset
+                </MudButton>
+            </MudExpansionPanel>
+            <MudExpansionPanel Text="Reassign Asset">
+                <MudSelect T="int" Label="New Employee" @bind-Value="_reassignEmployeeId">
+                    @foreach (var employee in _employees)
+                    {
+                        <MudSelectItem Value="@employee.Id">@employee.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudDatePicker @bind-Date="_reassignDate" Label="Assignment Date" Class="mt-2" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ReassignAsset" Class="mt-3">
+                    Reassign
+                </MudButton>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private bool _isEdit => Id.HasValue;
+    private AssignmentDto _model = new();
+    private MudForm? _form;
+    private List<EmployeeDto> _employees = [];
+    private List<AssetItemDto> _assetItems = [];
+    private DateTime? _assignedDate = DateTime.Today;
+    private DateTime? _returnedDate;
+    private DateTime? _returnDate = DateTime.Today;
+    private int _reassignEmployeeId;
+    private DateTime? _reassignDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _employees = await EmployeeService.GetAllAsync();
+        _assetItems = await AssetItemService.GetAllAsync();
+        _assignedDate = DateTime.Today;
+
+        if (_isEdit)
+        {
+            var assignment = await AssignmentService.GetByIdAsync(Id!.Value);
+            if (assignment != null)
+            {
+                _model = assignment;
+                _assignedDate = assignment.AssignedDate;
+                _returnedDate = assignment.ReturnedDate;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _model.AssignedDate = _assignedDate ?? DateTime.Today;
+        _model.ReturnedDate = _returnedDate;
+
+        var success = _isEdit
+            ? await AssignmentService.UpdateAsync(_model)
+            : await AssignmentService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Assignment saved.", Severity.Success);
+            NavigationManager.NavigateTo("/assignments");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save assignment.", Severity.Error);
+        }
+    }
+
+    private async Task ReturnAsset()
+    {
+        if (_returnDate.HasValue)
+        {
+            var success = await AssignmentService.ReturnAsync(_model.AssetItemId, _returnDate.Value);
+            Snackbar.Add(success ? "Asset returned." : "Return failed.", success ? Severity.Success : Severity.Error);
+        }
+    }
+
+    private async Task ReassignAsset()
+    {
+        if (_reassignEmployeeId > 0 && _reassignDate.HasValue)
+        {
+            var success = await AssignmentService.ReassignAsync(_model.Id, _reassignEmployeeId, _reassignDate.Value);
+            Snackbar.Add(success ? "Asset reassigned." : "Reassign failed.", success ? Severity.Success : Severity.Error);
+        }
+    }
+}

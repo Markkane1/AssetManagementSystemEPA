@@ -1,0 +1,67 @@
+@page "/vendors/new"
+@page "/vendors/edit/{Id:int}"
+@inject VendorService VendorService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Vendor" : "New Vendor")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Vendor" : "Create Vendor")</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
+        <MudTextField @bind-Value="_model.Address" Label="Address" />
+        <MudTextField @bind-Value="_model.ContactNumber" Label="Contact Number" />
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/vendors"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool _isEdit => Id.HasValue;
+    private VendorDto _model = new();
+    private MudForm? _form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_isEdit)
+        {
+            var vendor = await VendorService.GetByIdAsync(Id!.Value);
+            if (vendor != null)
+            {
+                _model = vendor;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = _isEdit
+            ? await VendorService.UpdateAsync(_model)
+            : await VendorService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Vendor saved.", Severity.Success);
+            NavigationManager.NavigateTo("/vendors");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save vendor.", Severity.Error);
+        }
+    }
+}

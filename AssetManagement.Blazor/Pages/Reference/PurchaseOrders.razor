@@ -1,0 +1,54 @@
+@page "/purchase-orders"
+@inject PurchaseOrderService PurchaseOrderService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Purchase Orders</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Purchase Orders</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/purchase-orders/new"))">
+        Add Purchase Order
+    </MudButton>
+    <MudTable Items="@_orders" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Order Number</MudTh>
+            <MudTh>Order Date</MudTh>
+            <MudTh>Vendor</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.OrderNumber</MudTd>
+            <MudTd>@context.OrderDate.ToShortDateString()</MudTd>
+            <MudTd>@context.VendorName</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/purchase-orders/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteOrder(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<PurchaseOrderDto> _orders = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _orders = await PurchaseOrderService.GetAllAsync();
+    }
+
+    private async Task DeleteOrder(int id)
+    {
+        if (await PurchaseOrderService.DeleteAsync(id))
+        {
+            Snackbar.Add("Purchase order deleted.", Severity.Success);
+            _orders = await PurchaseOrderService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete purchase order.", Severity.Error);
+        }
+    }
+}

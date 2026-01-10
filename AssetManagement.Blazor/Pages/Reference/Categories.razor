@@ -1,0 +1,52 @@
+@page "/categories"
+@inject CategoryService CategoryService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Categories</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Categories</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/categories/new"))">
+        Add Category
+    </MudButton>
+    <MudTable Items="@_categories" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Description</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/categories/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteCategory(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<CategoryDto> _categories = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await CategoryService.GetAllAsync();
+    }
+
+    private async Task DeleteCategory(int id)
+    {
+        if (await CategoryService.DeleteAsync(id))
+        {
+            Snackbar.Add("Category deleted.", Severity.Success);
+            _categories = await CategoryService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete category.", Severity.Error);
+        }
+    }
+}
