@@ -124,8 +124,8 @@ builder.Services.AddAuthorization(options =>
     }
 });
 
-// Register authorization handler
-builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+// Register authorization handler as Scoped because it depends on Scoped IIdentityService
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
 // Application Services
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());

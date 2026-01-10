@@ -11,6 +11,9 @@ namespace AssetManagement.Infrastructure.Data.Configurations
             builder.Property(a => a.AssignmentStatus)
                 .HasConversion<string>()
                 .IsRequired();
+
+            // Matching query filter to avoid warnings with required AssetItem/Asset relationship
+            builder.HasQueryFilter(a => !a.AssetItem.Asset.IsDeleted);
         }
     }
 }

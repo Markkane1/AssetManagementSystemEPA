@@ -10,6 +10,12 @@ namespace AssetManagement.Infrastructure.Data.Configurations
         {
             builder.Property(m => m.Status)
                 .HasConversion<string>();
+
+            builder.Property(m => m.Cost)
+                .HasColumnType("decimal(18,2)");
+
+            // Matching query filter to avoid warnings with required AssetItem/Asset relationship
+            builder.HasQueryFilter(m => !m.AssetItem.Asset.IsDeleted);
         }
     }
 }

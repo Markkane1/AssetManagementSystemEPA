@@ -22,6 +22,9 @@ namespace AssetManagement.Infrastructure.Data.Configurations
                 .WithMany()
                 .HasForeignKey(th => th.ToLocationId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            // Matching query filter to avoid warnings with required AssetItem/Asset relationship
+            builder.HasQueryFilter(th => !th.AssetItem.Asset.IsDeleted);
         }
     }
 }
