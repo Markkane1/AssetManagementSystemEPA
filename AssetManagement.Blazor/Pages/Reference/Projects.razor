@@ -1,0 +1,54 @@
+@page "/projects"
+@inject ProjectService ProjectService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Projects</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Projects</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/projects/new"))">
+        Add Project
+    </MudButton>
+    <MudTable Items="@_projects" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh>Run By</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.ProjectDescription</MudTd>
+            <MudTd>@context.ProjectRunBy</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/projects/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteProject(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<ProjectDto> _projects = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projects = await ProjectService.GetAllAsync();
+    }
+
+    private async Task DeleteProject(int id)
+    {
+        if (await ProjectService.DeleteAsync(id))
+        {
+            Snackbar.Add("Project deleted.", Severity.Success);
+            _projects = await ProjectService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete project.", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,66 @@
+@page "/categories/new"
+@page "/categories/edit/{Id:int}"
+@inject CategoryService CategoryService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Category" : "New Category")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Category" : "Create Category")</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
+        <MudTextField @bind-Value="_model.Description" Label="Description" Lines="3" />
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/categories"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool _isEdit => Id.HasValue;
+    private CategoryDto _model = new();
+    private MudForm? _form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_isEdit)
+        {
+            var category = await CategoryService.GetByIdAsync(Id!.Value);
+            if (category != null)
+            {
+                _model = category;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = _isEdit
+            ? await CategoryService.UpdateAsync(_model)
+            : await CategoryService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Category saved.", Severity.Success);
+            NavigationManager.NavigateTo("/categories");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save category.", Severity.Error);
+        }
+    }
+}

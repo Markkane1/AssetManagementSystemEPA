@@ -1,0 +1,54 @@
+@page "/vendors"
+@inject VendorService VendorService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Vendors</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Vendors</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/vendors/new"))">
+        Add Vendor
+    </MudButton>
+    <MudTable Items="@_vendors" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Address</MudTh>
+            <MudTh>Contact</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Address</MudTd>
+            <MudTd>@context.ContactNumber</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/vendors/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteVendor(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<VendorDto> _vendors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _vendors = await VendorService.GetAllAsync();
+    }
+
+    private async Task DeleteVendor(int id)
+    {
+        if (await VendorService.DeleteAsync(id))
+        {
+            Snackbar.Add("Vendor deleted.", Severity.Success);
+            _vendors = await VendorService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete vendor.", Severity.Error);
+        }
+    }
+}

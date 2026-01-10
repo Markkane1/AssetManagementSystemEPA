@@ -1,0 +1,48 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudPaper Class="pa-6 mx-auto" MaxWidth="420px" Elevation="1">
+    <MudText Typo="Typo.h5" Class="mb-4">Sign In</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Username" Label="Username" Required="true" />
+        <MudTextField @bind-Value="_model.Password" Label="Password" InputType="InputType.Password" Required="true" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@HandleLogin" Class="mt-4" FullWidth="true">
+            Login
+        </MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/register"))" Class="mt-2" FullWidth="true">
+            Create an account
+        </MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private readonly LoginDto _model = new(string.Empty, string.Empty);
+    private MudForm? _form;
+
+    private async Task HandleLogin()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var response = await AuthService.LoginAsync(_model);
+        if (response is null)
+        {
+            Snackbar.Add("Login failed. Please check your credentials.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Welcome back!", Severity.Success);
+        NavigationManager.NavigateTo("/");
+    }
+}

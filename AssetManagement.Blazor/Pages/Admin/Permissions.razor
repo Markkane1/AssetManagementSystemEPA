@@ -1,0 +1,47 @@
+@page "/permissions"
+@inject PermissionCatalogService PermissionCatalogService
+
+<PageTitle>Permissions</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Permissions Catalog</MudText>
+    <MudSelect T="string" Label="Category" @bind-Value="_selectedCategory">
+        <MudSelectItem Value="">All</MudSelectItem>
+        @foreach (var category in _categories)
+        {
+            <MudSelectItem Value="@category">@category</MudSelectItem>
+        }
+    </MudSelect>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadPermissions">Load</MudButton>
+    <MudTable Items="@_permissions" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh>Category</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Description</MudTd>
+            <MudTd>@context.Category</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<string> _categories = [];
+    private string _selectedCategory = string.Empty;
+    private List<PermissionDto> _permissions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await PermissionCatalogService.GetCategoriesAsync();
+        await LoadPermissions();
+    }
+
+    private async Task LoadPermissions()
+    {
+        _permissions = string.IsNullOrWhiteSpace(_selectedCategory)
+            ? await PermissionCatalogService.GetAllAsync()
+            : await PermissionCatalogService.GetByCategoryAsync(_selectedCategory);
+    }
+}

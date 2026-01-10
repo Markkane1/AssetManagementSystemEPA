@@ -1,0 +1,50 @@
+@page "/directorates"
+@inject DirectorateService DirectorateService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Directorates</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Directorates</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/directorates/new"))">
+        Add Directorate
+    </MudButton>
+    <MudTable Items="@_directorates" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/directorates/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteDirectorate(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<DirectorateDto> _directorates = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _directorates = await DirectorateService.GetAllAsync();
+    }
+
+    private async Task DeleteDirectorate(int id)
+    {
+        if (await DirectorateService.DeleteAsync(id))
+        {
+            Snackbar.Add("Directorate deleted.", Severity.Success);
+            _directorates = await DirectorateService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete directorate.", Severity.Error);
+        }
+    }
+}

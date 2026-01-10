@@ -1,7 +1,62 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudText Typo="Typo.h4" Class="mb-4">Asset Management Dashboard</MudText>
 
-Welcome to your new app.
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.subtitle1">Assets</MudText>
+            <MudText Typo="Typo.h5">@_assetCount</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.subtitle1">Asset Items</MudText>
+            <MudText Typo="Typo.h5">@_assetItemCount</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.subtitle1">Assignments</MudText>
+            <MudText Typo="Typo.h5">@_assignmentCount</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.subtitle1">Maintenance Records</MudText>
+            <MudText Typo="Typo.h5">@_maintenanceCount</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudDivider Class="my-4" />
+
+<MudText Typo="Typo.h6" Class="mb-2">Quick Links</MudText>
+<MudStack Row="true" Spacing="2">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="assets">Manage Assets</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="asset-items">Manage Asset Items</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="assignments">Manage Assignments</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="reports">View Reports</MudButton>
+</MudStack>
+
+@code {
+    [Inject] public AssetService AssetService { get; set; } = default!;
+    [Inject] public AssetItemService AssetItemService { get; set; } = default!;
+    [Inject] public AssignmentService AssignmentService { get; set; } = default!;
+    [Inject] public MaintenanceRecordService MaintenanceRecordService { get; set; } = default!;
+
+    private int _assetCount;
+    private int _assetItemCount;
+    private int _assignmentCount;
+    private int _maintenanceCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _assetCount = (await AssetService.GetAllAsync()).Count;
+        _assetItemCount = (await AssetItemService.GetAllAsync()).Count;
+        _assignmentCount = (await AssignmentService.GetAllAsync()).Count;
+        _maintenanceCount = (await MaintenanceRecordService.GetAllAsync()).Count;
+    }
+}

@@ -1,0 +1,96 @@
+@page "/maintenance/new"
+@page "/maintenance/edit/{Id:int}"
+@inject MaintenanceRecordService MaintenanceRecordService
+@inject AssetItemService AssetItemService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Maintenance Record" : "New Maintenance Record")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Maintenance Record" : "Create Maintenance Record")</MudText>
+    <MudForm @ref="_form">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int" Label="Asset Item" @bind-Value="_model.AssetItemId">
+                    @foreach (var item in _assetItems)
+                    {
+                        <MudSelectItem Value="@item.Id">@item.SerialNumber</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_recordDate" Label="Date" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_model.Description" Label="Description" Lines="3" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_model.Status" Label="Status" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal?" @bind-Value="_model.Cost" Label="Cost" />
+            </MudItem>
+        </MudGrid>
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/maintenance"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private bool _isEdit => Id.HasValue;
+    private MaintenanceRecordDto _model = new();
+    private DateTime? _recordDate = DateTime.Today;
+    private MudForm? _form;
+    private List<AssetItemDto> _assetItems = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _assetItems = await AssetItemService.GetAllAsync();
+        _recordDate = DateTime.Today;
+
+        if (_isEdit)
+        {
+            var record = await MaintenanceRecordService.GetByIdAsync(Id!.Value);
+            if (record != null)
+            {
+                _model = record;
+                _recordDate = record.Date;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _model.Date = _recordDate ?? DateTime.Today;
+
+        var success = _isEdit
+            ? await MaintenanceRecordService.UpdateAsync(_model)
+            : await MaintenanceRecordService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Maintenance record saved.", Severity.Success);
+            NavigationManager.NavigateTo("/maintenance");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save record.", Severity.Error);
+        }
+    }
+}

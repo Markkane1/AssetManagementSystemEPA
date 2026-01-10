@@ -1,0 +1,54 @@
+@page "/locations"
+@inject LocationService LocationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Locations</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Locations</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/locations/new"))">
+        Add Location
+    </MudButton>
+    <MudTable Items="@_locations" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Head Office</MudTh>
+            <MudTh>District</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@(context.IsHeadOffice ? "Yes" : "No")</MudTd>
+            <MudTd>@context.District</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/locations/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteLocation(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<LocationDto> _locations = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _locations = await LocationService.GetAllAsync();
+    }
+
+    private async Task DeleteLocation(int id)
+    {
+        if (await LocationService.DeleteAsync(id))
+        {
+            Snackbar.Add("Location deleted.", Severity.Success);
+            _locations = await LocationService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete location.", Severity.Error);
+        }
+    }
+}

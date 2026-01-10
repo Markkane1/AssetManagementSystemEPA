@@ -1,0 +1,66 @@
+@page "/maintenance"
+@inject MaintenanceRecordService MaintenanceRecordService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Maintenance Records</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Maintenance Records</MudText>
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/maintenance/new"))">
+            Add Record
+        </MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadRecords">Refresh</MudButton>
+    </MudStack>
+    <MudTable Items="@_records" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Asset Item</MudTh>
+            <MudTh>Date</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Cost</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.AssetItemSerialNumber</MudTd>
+            <MudTd>@context.Date.ToShortDateString()</MudTd>
+            <MudTd>@context.Description</MudTd>
+            <MudTd>@context.Status</MudTd>
+            <MudTd>@context.Cost</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/maintenance/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteRecord(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<MaintenanceRecordDto> _records = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRecords();
+    }
+
+    private async Task LoadRecords()
+    {
+        _records = await MaintenanceRecordService.GetAllAsync();
+    }
+
+    private async Task DeleteRecord(int id)
+    {
+        if (await MaintenanceRecordService.DeleteAsync(id))
+        {
+            Snackbar.Add("Record deleted.", Severity.Success);
+            await LoadRecords();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete record.", Severity.Error);
+        }
+    }
+}
