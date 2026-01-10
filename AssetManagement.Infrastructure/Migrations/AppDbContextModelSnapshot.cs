@@ -33,8 +33,33 @@ namespace AssetManagement.Infrastructure.Migrations
                     b.Property<DateTime>("AcquisitionDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("AssetCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Manufacturer")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -49,8 +74,24 @@ namespace AssetManagement.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<string>("Specification")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UntrackedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("VendorId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("WarrantyEndDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -75,10 +116,6 @@ namespace AssetManagement.Infrastructure.Migrations
 
                     b.Property<int>("AssetId")
                         .HasColumnType("int");
-
-                    b.Property<string>("AssignmentStatus")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("LocationId")
                         .HasColumnType("int");
@@ -127,14 +164,27 @@ namespace AssetManagement.Infrastructure.Migrations
                     b.Property<int>("AssetItemId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("AssignedByEmployeeId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("AssignmentDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("AssignmentStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("EmployeeId")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("ReturnDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("ReturnNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ReturnedByEmployeeId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -384,6 +434,74 @@ namespace AssetManagement.Infrastructure.Migrations
                     b.ToTable("PurchaseOrders");
                 });
 
+            modelBuilder.Entity("AssetManagement.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeviceInfo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IPAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("AssetManagement.Domain.Entities.RolePermission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex("RoleId", "PermissionId")
+                        .IsUnique();
+
+                    b.ToTable("RolePermissions");
+                });
+
             modelBuilder.Entity("AssetManagement.Domain.Entities.TransferHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -415,40 +533,25 @@ namespace AssetManagement.Infrastructure.Migrations
                     b.ToTable("TransferHistories");
                 });
 
-            modelBuilder.Entity("AssetManagement.Domain.Entities.UserPermission", b =>
+            modelBuilder.Entity("AssetManagement.Domain.Entities.UserLocationAccess", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("GrantedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GrantedBy")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("PermissionId")
-                        .HasColumnType("int");
-
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("Id");
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
 
-                    b.HasIndex("PermissionId");
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "LocationId");
+
+                    b.HasIndex("LocationId");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("UserId", "PermissionId")
-                        .IsUnique();
-
-                    b.ToTable("UserPermissions");
+                    b.ToTable("UserLocationAccess");
                 });
 
             modelBuilder.Entity("AssetManagement.Domain.Entities.Vendor", b =>
@@ -870,6 +973,17 @@ namespace AssetManagement.Infrastructure.Migrations
                     b.Navigation("Vendor");
                 });
 
+            modelBuilder.Entity("AssetManagement.Domain.Entities.RolePermission", b =>
+                {
+                    b.HasOne("AssetManagement.Domain.Entities.Permission", "Permission")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+                });
+
             modelBuilder.Entity("AssetManagement.Domain.Entities.TransferHistory", b =>
                 {
                     b.HasOne("AssetManagement.Domain.Entities.AssetItem", "AssetItem")
@@ -897,15 +1011,15 @@ namespace AssetManagement.Infrastructure.Migrations
                     b.Navigation("ToLocation");
                 });
 
-            modelBuilder.Entity("AssetManagement.Domain.Entities.UserPermission", b =>
+            modelBuilder.Entity("AssetManagement.Domain.Entities.UserLocationAccess", b =>
                 {
-                    b.HasOne("AssetManagement.Domain.Entities.Permission", "Permission")
-                        .WithMany("UserPermissions")
-                        .HasForeignKey("PermissionId")
+                    b.HasOne("AssetManagement.Domain.Entities.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Permission");
+                    b.Navigation("Location");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -999,7 +1113,7 @@ namespace AssetManagement.Infrastructure.Migrations
 
             modelBuilder.Entity("AssetManagement.Domain.Entities.Permission", b =>
                 {
-                    b.Navigation("UserPermissions");
+                    b.Navigation("RolePermissions");
                 });
 
             modelBuilder.Entity("AssetManagement.Domain.Entities.Project", b =>

@@ -14,6 +14,14 @@ namespace AssetManagement.Infrastructure.Data.Configurations
                 money.Property(p => p.Currency).HasColumnName("Currency").HasMaxLength(3);
             });
 
+            builder.Ignore(a => a.TrackedQuantity);
+
+            builder.Property(a => a.AssetCode).IsRequired();
+            builder.Property(a => a.Name).IsRequired();
+
+            // Soft delete query filter
+            builder.HasQueryFilter(a => !a.IsDeleted);
+
             builder.HasOne(a => a.PurchaseOrder)
                 .WithMany(po => po.Assets)
                 .HasForeignKey(a => a.PurchaseOrderId)

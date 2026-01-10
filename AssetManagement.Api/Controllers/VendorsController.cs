@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using AssetManagement.Api.Constants;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.UseCases.Vendor;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
@@ -19,6 +21,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = Permissions.Vendors.Read)]
         public async Task<ActionResult<IEnumerable<VendorDto>>> GetAll()
         {
             var vendors = await _mediator.Send(new GetAllVendorsQuery());
@@ -26,6 +29,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = Permissions.Vendors.Read)]
         public async Task<ActionResult<VendorDto>> GetById(int id)
         {
             var vendor = await _mediator.Send(new GetVendorByIdQuery(id));
@@ -33,6 +37,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = Permissions.Vendors.Create)]
         public async Task<ActionResult<int>> Create([FromBody] VendorDto vendorDto)
         {
             var id = await _mediator.Send(new CreateVendorCommand(vendorDto));
@@ -40,6 +45,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPut]
+        [Authorize(Policy = Permissions.Vendors.Update)]
         public async Task<IActionResult> Update([FromBody] VendorDto vendorDto)
         {
             await _mediator.Send(new UpdateVendorCommand(vendorDto));
@@ -47,6 +53,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.Vendors.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _mediator.Send(new DeleteVendorCommand(id));

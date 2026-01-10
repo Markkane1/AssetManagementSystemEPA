@@ -32,9 +32,9 @@ namespace AssetManagement.Infrastructure.Data.Configurations
             // Index on category for faster lookups
             builder.HasIndex(p => p.Category);
 
-            builder.HasMany(p => p.UserPermissions)
-                .WithOne(up => up.Permission)
-                .HasForeignKey(up => up.PermissionId)
+            builder.HasMany(p => p.RolePermissions)
+                .WithOne(rp => rp.Permission)
+                .HasForeignKey(rp => rp.PermissionId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

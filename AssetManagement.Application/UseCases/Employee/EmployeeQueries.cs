@@ -5,24 +5,27 @@ using MediatR;
 
 namespace AssetManagement.Application.UseCases.Employee
 {
-    public record GetAllEmployeesQuery : IRequest<IEnumerable<EmployeeDto>>;
+    public record GetAllEmployeesQuery(string UserId) : IRequest<IEnumerable<EmployeeDto>>;
     public record GetEmployeeByIdQuery(int Id) : IRequest<EmployeeDto>;
 
     public class EmployeeQueryHandler : IRequestHandler<GetAllEmployeesQuery, IEnumerable<EmployeeDto>>,
         IRequestHandler<GetEmployeeByIdQuery, EmployeeDto>
     {
         private readonly IEmployeeRepository _employeeRepository;
+        private readonly IIdentityService _identityService;
         private readonly IMapper _mapper;
 
-        public EmployeeQueryHandler(IEmployeeRepository employeeRepository, IMapper mapper)
+        public EmployeeQueryHandler(IEmployeeRepository employeeRepository, IIdentityService identityService, IMapper mapper)
         {
             _employeeRepository = employeeRepository;
+            _identityService = identityService;
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<EmployeeDto>> Handle(GetAllEmployeesQuery request, CancellationToken cancellationToken)
         {
-            var employees = await _employeeRepository.GetAllAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            var employees = await _employeeRepository.GetAllEmployeesAsync(allowedLocations);
             return _mapper.Map<IEnumerable<EmployeeDto>>(employees);
         }
 

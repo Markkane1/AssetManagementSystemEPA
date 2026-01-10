@@ -15,7 +15,7 @@ namespace AssetManagement.Application.UseCases.Asset
     public record GetAssetsByVendorQuery(int VendorId) : IRequest<IEnumerable<AssetDto>>;
     public record GetAssetsByAcquisitionDateRangeQuery(DateTime StartDate, DateTime EndDate) : IRequest<IEnumerable<AssetDto>>;
     public record GetLowStockAssetsQuery(int Threshold) : IRequest<IEnumerable<AssetDto>>;
-    public class GetAllAssetsQuery : IRequest<IEnumerable<AssetDto>> { }
+    public record GetAllAssetsQuery(string UserId) : IRequest<IEnumerable<AssetDto>>;
     public class GetAssetByIdQuery : IRequest<AssetDto>
     {
         public int Id { get; }
@@ -25,7 +25,7 @@ namespace AssetManagement.Application.UseCases.Asset
         }
     }
 
-    public class AssetQueryHandler : 
+    public class AssetQueryHandler :
         IRequestHandler<GetAssetsByLocationQuery, IEnumerable<AssetDto>>,
         IRequestHandler<GetAssetsByCategoryQuery, IEnumerable<AssetDto>>,
         IRequestHandler<GetAssetsBySourceQuery, IEnumerable<AssetDto>>,
@@ -36,11 +36,13 @@ namespace AssetManagement.Application.UseCases.Asset
         IRequestHandler<GetAssetByIdQuery, AssetDto>
     {
         private readonly IAssetRepository _assetRepository;
+        private readonly IIdentityService _identityService;
         private readonly IMapper _mapper;
 
-        public AssetQueryHandler(IAssetRepository assetRepository, IMapper mapper)
+        public AssetQueryHandler(IAssetRepository assetRepository, IIdentityService identityService, IMapper mapper)
         {
             _assetRepository = assetRepository;
+            _identityService = identityService;
             _mapper = mapper;
         }
 
@@ -83,7 +85,8 @@ namespace AssetManagement.Application.UseCases.Asset
 
         public async Task<IEnumerable<AssetDto>> Handle(GetAllAssetsQuery request, CancellationToken cancellationToken)
         {
-            var assets = await _assetRepository.GetAllAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            var assets = await _assetRepository.GetAllAssetsAsync(allowedLocations);
             return _mapper.Map<IEnumerable<AssetDto>>(assets);
         }
 

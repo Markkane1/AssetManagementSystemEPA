@@ -16,7 +16,7 @@ namespace AssetManagement.Application.UseCases.Assignment
     public record UpdateAssignmentCommand(AssignmentDto Assignment) : IRequest<Unit>;
     public record DeleteAssignmentCommand(int Id) : IRequest<Unit>;
 
-    public class AssignmentCommandHandler : 
+    public class AssignmentCommandHandler :
         IRequestHandler<ReturnAssetItemCommand, Unit>,
         IRequestHandler<ReassignAssetItemCommand, Unit>,
         IRequestHandler<CreateAssignmentCommand, int>,
@@ -43,15 +43,23 @@ namespace AssetManagement.Application.UseCases.Assignment
             if (assetItem == null)
                 throw new KeyNotFoundException($"AssetItem with ID {request.AssetItemId} not found.");
 
-            var assignment = await _assignmentRepository.GetAllAsync();
-            var activeAssignment = assignment.FirstOrDefault(a => a.AssetItemId == request.AssetItemId && a.ReturnDate == null);
+            // Bad performance but sticking to existing pattern of fetching all for now, or use Where if Repos allows
+            // Assuming _assignmentRepository.GetAllAsync() is what we have. 
+            // Ideally we should add GetActiveAssignmentByAssetId logic.
+            var assignments = await _assignmentRepository.GetAllAsync();
+            var activeAssignment = assignments.FirstOrDefault(a => a.AssetItemId == request.AssetItemId && a.ReturnDate == null);
+
             if (activeAssignment == null)
                 throw new InvalidOperationException($"No active assignment found for AssetItem ID {request.AssetItemId}.");
 
             activeAssignment.ReturnDate = request.ReturnDate;
-            assetItem.AssignmentStatus = AssignmentStatus.Returned;
+            activeAssignment.AssignmentStatus = AssignmentStatus.Returned; // Updating status on Assignment
+
             await _assignmentRepository.UpdateAsync(activeAssignment);
-            await _assetRepository.UpdateAssetItemAsync(assetItem);
+            // No need to update assetItem.AssignmentStatus
+
+            // However, we might need to update AssetItem state (Functional/etc) if logic requires, but AssetItem.Status is different.
+
             return Unit.Value;
         }
 
@@ -66,17 +74,19 @@ namespace AssetManagement.Application.UseCases.Assignment
                 throw new KeyNotFoundException($"AssetItem with ID {assignment.AssetItemId} not found.");
 
             assignment.ReturnDate = DateTime.UtcNow;
+            assignment.AssignmentStatus = AssignmentStatus.Returned;
             await _assignmentRepository.UpdateAsync(assignment);
 
             var newAssignment = new Domain.Entities.Assignment
             {
                 AssetItemId = assignment.AssetItemId,
                 EmployeeId = request.NewEmployeeId,
-                AssignmentDate = request.AssignmentDate
+                AssignmentDate = request.AssignmentDate,
+                AssignmentStatus = AssignmentStatus.Assigned
             };
             await _assignmentRepository.AddAsync(newAssignment);
-            assetItem.AssignmentStatus = AssignmentStatus.Assigned;
-            await _assetRepository.UpdateAssetItemAsync(assetItem);
+            // No need to update assetItem.AssignmentStatus
+
             return Unit.Value;
         }
 
@@ -89,15 +99,18 @@ namespace AssetManagement.Application.UseCases.Assignment
             if (assetItem.Status == ItemStatus.NotRepairable)
                 throw new InvalidOperationException("Cannot assign a non-repairable asset item.");
 
-            if (assetItem.AssignmentStatus != AssignmentStatus.Returned)
-                throw new InvalidOperationException($"AssetItem with ID {request.Assignment.AssetItemId} is not available for assignment.");
+            var assignments = await _assignmentRepository.GetAllAsync();
+            var activeAssignment = assignments.FirstOrDefault(a => a.AssetItemId == request.Assignment.AssetItemId && a.ReturnDate == null);
+
+            if (activeAssignment != null)
+                throw new InvalidOperationException($"AssetItem with ID {request.Assignment.AssetItemId} is already assigned.");
 
             var assignment = _mapper.Map<Domain.Entities.Assignment>(request.Assignment);
             assignment.AssignmentDate = DateTime.UtcNow;
-            await _assignmentRepository.AddAsync(assignment);
+            assignment.AssignmentStatus = AssignmentStatus.Assigned;
 
-            assetItem.AssignmentStatus = AssignmentStatus.Assigned;
-            await _assetRepository.UpdateAssetItemAsync(assetItem);
+            await _assignmentRepository.AddAsync(assignment);
+            // No need to update assetItem.AssignmentStatus
 
             return assignment.Id;
         }

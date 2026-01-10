@@ -5,32 +5,33 @@ using MediatR;
 
 namespace AssetManagement.Application.UseCases.MaintenanceRecord
 {
-    public record GetAllMaintenanceRecordsQuery : IRequest<IEnumerable<MaintenanceRecordDto>>;
+    public record GetAllMaintenanceRecordsQuery(string UserId) : IRequest<IEnumerable<MaintenanceRecordDto>>;
     public record GetMaintenanceRecordByIdQuery(int Id) : IRequest<MaintenanceRecordDto>;
 
     public class MaintenanceRecordQueryHandler : IRequestHandler<GetAllMaintenanceRecordsQuery, IEnumerable<MaintenanceRecordDto>>,
         IRequestHandler<GetMaintenanceRecordByIdQuery, MaintenanceRecordDto>
     {
-        private readonly IRepository<Domain.Entities.MaintenanceRecord> _repository;
+        private readonly IAssetRepository _assetRepository;
+        private readonly IIdentityService _identityService;
         private readonly IMapper _mapper;
 
-        public MaintenanceRecordQueryHandler(IRepository<Domain.Entities.MaintenanceRecord> repository, IMapper mapper)
+        public MaintenanceRecordQueryHandler(IAssetRepository assetRepository, IIdentityService identityService, IMapper mapper)
         {
-            _repository = repository;
+            _assetRepository = assetRepository;
+            _identityService = identityService;
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<MaintenanceRecordDto>> Handle(GetAllMaintenanceRecordsQuery request, CancellationToken cancellationToken)
         {
-            var maintenanceRecords = await _repository.GetAllAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            var maintenanceRecords = await _assetRepository.GetAllMaintenanceRecordsAsync(allowedLocations);
             return _mapper.Map<IEnumerable<MaintenanceRecordDto>>(maintenanceRecords);
         }
 
         public async Task<MaintenanceRecordDto> Handle(GetMaintenanceRecordByIdQuery request, CancellationToken cancellationToken)
         {
-            var maintenanceRecord = await _repository.GetByIdAsync(request.Id);
-            if (maintenanceRecord == null)
-                throw new KeyNotFoundException($"MaintenanceRecord with ID {request.Id} not found.");
+            var maintenanceRecord = await _assetRepository.GetMaintenanceRecordByIdAsync(request.Id);
             return _mapper.Map<MaintenanceRecordDto>(maintenanceRecord);
         }
     }

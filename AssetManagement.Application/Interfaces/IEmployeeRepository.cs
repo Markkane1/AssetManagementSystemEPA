@@ -7,11 +7,12 @@ namespace AssetManagement.Application.Interfaces
 {
     public interface IEmployeeRepository : IRepository<Employee>
     {
-        Task<IEnumerable<Assignment>> GetAssignmentsByEmployeeAsync(int employeeId);
-        Task<IEnumerable<Assignment>> GetAllAssignmentHistoryForEmployeeAsync(int employeeId);
-        Task<IEnumerable<Assignment>> GetAssignmentsByDateRangeAsync(DateTime startDate, DateTime endDate);
-        Task<IEnumerable<EmployeeAssetValueSummaryDto>> GetEmployeeAssetValueSummaryAsync();
-        Task<IEnumerable<DirectorateAssignmentSummaryDto>> GetAssignmentSummaryByDirectorateAsync();
-        Task<IEnumerable<Assignment>> GetOverdueAssignmentsAsync();
+        Task<IEnumerable<Employee>> GetAllEmployeesAsync(IEnumerable<int>? allowedLocationIds = null);
+        Task<IEnumerable<Assignment>> GetAssignmentsByEmployeeAsync(int employeeId, IEnumerable<int>? allowedLocationIds = null);
+        Task<IEnumerable<Assignment>> GetAllAssignmentHistoryForEmployeeAsync(int employeeId, IEnumerable<int>? allowedLocationIds = null);
+        Task<IEnumerable<Assignment>> GetAssignmentsByDateRangeAsync(DateTime startDate, DateTime endDate, IEnumerable<int>? allowedLocationIds = null);
+        Task<IEnumerable<EmployeeAssetValueSummaryDto>> GetEmployeeAssetValueSummaryAsync(IEnumerable<int>? allowedLocationIds = null);
+        Task<IEnumerable<DirectorateAssignmentSummaryDto>> GetAssignmentSummaryByDirectorateAsync(IEnumerable<int>? allowedLocationIds = null);
+        Task<IEnumerable<Assignment>> GetOverdueAssignmentsAsync(IEnumerable<int>? allowedLocationIds = null);
     }
 }

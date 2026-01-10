@@ -1,7 +1,9 @@
-﻿namespace AssetManagement.Domain.Enums;
-
-public enum AssignmentStatus
+﻿namespace AssetManagement.Domain.Enums
 {
-    Assigned, Returned
-
+    public enum AssignmentStatus
+    {
+        Available = 0,
+        Assigned = 1,
+        Returned = 2
+    }
 }

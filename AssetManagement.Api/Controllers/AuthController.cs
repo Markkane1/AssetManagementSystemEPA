@@ -21,30 +21,16 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto)
     {
-        try
-        {
-            var result = await _mediator.Send(new RegisterCommand(registerDto));
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var result = await _mediator.Send(new RegisterCommand(registerDto));
+        return Ok(result);
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
     {
-        try
-        {
-            var result = await _mediator.Send(new LoginQuery(loginDto));
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { error = ex.Message });
-        }
+        var result = await _mediator.Send(new LoginQuery(loginDto));
+        return Ok(result);
     }
 
     [HttpGet("me")]
@@ -58,4 +44,17 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new GetCurrentUserQuery(userId));
         return Ok(result);
     }
+
+    [HttpPost("refresh-token")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponseDto>> RefreshToken([FromBody] RefreshTokenRequest request)
+    {
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var deviceInfo = Request.Headers["User-Agent"].ToString();
+
+        var result = await _mediator.Send(new RefreshTokenCommand(request.AccessToken, request.RefreshToken, deviceInfo, ipAddress));
+        return Ok(result);
+    }
 }
+
+public record RefreshTokenRequest(string AccessToken, string RefreshToken);

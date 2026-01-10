@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using AssetManagement.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace AssetManagement.Domain.Entities;
 
@@ -20,4 +21,12 @@ public class Assignment
     public DateTime AssignmentDate { get; set; }
 
     public DateTime? ReturnDate { get; set; }
+
+    public string? ReturnNotes { get; set; }
+
+    public int? AssignedByEmployeeId { get; set; }
+
+    public int? ReturnedByEmployeeId { get; set; }
+
+    public AssignmentStatus AssignmentStatus { get; set; }
 }

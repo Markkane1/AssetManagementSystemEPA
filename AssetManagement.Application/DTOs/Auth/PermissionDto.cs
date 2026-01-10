@@ -9,12 +9,17 @@ public class PermissionDto
     public bool IsActive { get; set; }
 }
 
-public class UserPermissionDto
+public class RolePermissionDto
 {
     public int Id { get; set; }
-    public string UserId { get; set; } = string.Empty;
+    public string RoleId { get; set; } = string.Empty;
     public int PermissionId { get; set; }
     public string PermissionName { get; set; } = string.Empty;
-    public DateTime GrantedAt { get; set; }
-    public string GrantedBy { get; set; } = string.Empty;
+}
+
+public class UserLocationAccessDto
+{
+    public string UserId { get; set; } = string.Empty;
+    public int LocationId { get; set; }
+    public string LocationName { get; set; } = string.Empty;
 }

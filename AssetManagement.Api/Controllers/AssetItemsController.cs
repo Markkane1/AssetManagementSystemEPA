@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using AssetManagement.Api.Constants;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.UseCases.AssetItem;
 using Microsoft.AspNetCore.Authorization;
@@ -21,13 +22,18 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AssetItemDto>>> GetAll([FromQuery] string userRole, [FromQuery] int? userLocationId)
+        [Authorize(Policy = Permissions.AssetItems.Read)]
+        public async Task<ActionResult<IEnumerable<AssetItemDto>>> GetAll()
         {
-            var assetItems = await _mediator.Send(new GetAllAssetItemsQuery(userRole, userLocationId));
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var assetItems = await _mediator.Send(new GetAllAssetItemsQuery(userId));
             return Ok(assetItems);
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = Permissions.AssetItems.Read)]
         public async Task<ActionResult<AssetItemDto>> GetById(int id)
         {
             var assetItem = await _mediator.Send(new GetAssetItemByIdQuery(id));
@@ -35,6 +41,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = Permissions.AssetItems.Create)]
         public async Task<ActionResult<int>> Create([FromBody] AssetItemDto assetItemDto)
         {
             var id = await _mediator.Send(new CreateAssetItemCommand(assetItemDto));
@@ -42,6 +49,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPut]
+        [Authorize(Policy = Permissions.AssetItems.Update)]
         public async Task<IActionResult> Update([FromBody] AssetItemDto assetItemDto)
         {
             await _mediator.Send(new UpdateAssetItemCommand(assetItemDto));
@@ -49,14 +57,15 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.AssetItems.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _mediator.Send(new DeleteAssetItemCommand(id));
             return NoContent();
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost("transfer")]
+        [Authorize(Policy = Permissions.AssetItems.Transfer)]
         public async Task<IActionResult> TransferAssets([FromBody] TransferAssetsRequest request)
         {
             await _mediator.Send(new TransferAssetsCommand(request.AssetItemIds, request.TargetLocationId));
@@ -64,9 +73,13 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("unassigned")]
+        [Authorize(Policy = Permissions.AssetItems.Read)]
         public async Task<ActionResult<IEnumerable<AssetItemDto>>> GetUnassignedAssetItems()
         {
-            var assetItems = await _mediator.Send(new GetUnassignedAssetItemsQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var assetItems = await _mediator.Send(new GetUnassignedAssetItemsQuery(userId));
             return Ok(assetItems);
         }
     }

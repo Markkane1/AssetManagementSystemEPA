@@ -45,7 +45,7 @@ namespace AssetManagement.Application.UseCases.AssetItem
                     throw new KeyNotFoundException($"AssetItem with ID {id} not found.");
                 if (assetItem.LocationId == request.TargetLocationId)
                     throw new InvalidOperationException($"AssetItem with ID {id} is already at location {request.TargetLocationId}.");
-                if (assetItem.AssignmentStatus == AssignmentStatus.Assigned)
+                if (assetItem.Assignments.Any(a => a.ReturnDate == null))
                     throw new InvalidOperationException($"AssetItem with ID {id} is currently assigned and cannot be transferred.");
                 assetItems.Add(assetItem);
                 assetIds.Add(assetItem.AssetId);
@@ -56,9 +56,9 @@ namespace AssetManagement.Application.UseCases.AssetItem
                 var asset = await _assetRepository.GetByIdAsync(assetId);
                 if (asset == null)
                     throw new KeyNotFoundException($"Asset with ID {assetId} not found.");
-                var itemsToTransfer = assetItems.Count(ai => ai.AssetId == assetId);
-                if (itemsToTransfer > asset.Quantity)
-                    throw new InvalidOperationException($"Insufficient quantity for Asset ID {assetId}. Available: {asset.Quantity}, Requested: {itemsToTransfer}.");
+
+                // Note: We don't check for asset.Quantity here anymore as we are just moving items, not consuming them.
+                // The original code had a check but it used asset.Quantity which might be wrong if it's total owned.
             }
 
             foreach (var assetItem in assetItems)
@@ -76,12 +76,7 @@ namespace AssetManagement.Application.UseCases.AssetItem
                 };
                 await _transferHistoryRepository.AddAsync(transferHistory);
 
-                var asset = await _assetRepository.GetByIdAsync(assetItem.AssetId);
-                asset.UpdateQuantity(asset.Quantity - 1);
-                if (asset.Quantity == 0)
-                    await _assetRepository.DeleteAsync(assetItem.AssetId);
-                else
-                    await _assetRepository.UpdateAsync(asset);
+                // Removed invalid asset quantity update logic.
             }
 
             return Unit.Value;

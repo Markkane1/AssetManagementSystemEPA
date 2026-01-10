@@ -14,8 +14,8 @@ namespace AssetManagement.Infrastructure.Data.Configurations
             builder.HasIndex(ai => ai.SerialNumber)
                 .IsUnique();
 
-            builder.Property(ai => ai.AssignmentStatus)
-                .HasConversion<string>();
+            // AssignmentStatus removed
+
 
             builder.Property(ai => ai.Status)
                 .HasConversion<string>()

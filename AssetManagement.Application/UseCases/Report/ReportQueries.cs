@@ -9,10 +9,10 @@ using MediatR;
 
 namespace AssetManagement.Application.UseCases.Report
 {
-    public class GetAssetSummaryByLocationQuery : IRequest<IEnumerable<AssetSummaryDto>>;
-    public class GetAssetSummaryByCategoryQuery : IRequest<IEnumerable<CategorySummaryDto>>;
-    public class GetAssignmentSummaryByDirectorateQuery : IRequest<IEnumerable<DirectorateAssignmentSummaryDto>>;
-    public class GetAssetStatusReportQuery : IRequest<IEnumerable<AssetStatusReportDto>>;
+    public record GetAssetSummaryByLocationQuery(string UserId) : IRequest<IEnumerable<AssetSummaryDto>>;
+    public record GetAssetSummaryByCategoryQuery(string UserId) : IRequest<IEnumerable<CategorySummaryDto>>;
+    public record GetAssignmentSummaryByDirectorateQuery(string UserId) : IRequest<IEnumerable<DirectorateAssignmentSummaryDto>>;
+    public record GetAssetStatusReportQuery(string UserId) : IRequest<IEnumerable<AssetStatusReportDto>>;
     public class GetMaintenanceHistoryForAssetQuery : IRequest<IEnumerable<MaintenanceRecordDto>>
     {
         public int AssetItemId { get; }
@@ -33,7 +33,7 @@ namespace AssetManagement.Application.UseCases.Report
     public class GetMaintenanceCostSummaryQuery : IRequest<IEnumerable<MaintenanceCostSummaryDto>>;
     public class GetAssetDepreciationReportQuery : IRequest<IEnumerable<DepreciationReportDto>>;
     public class GetLocationTransferSummaryQuery : IRequest<IEnumerable<LocationTransferSummaryDto>>;
-    public class GetEmployeeAssetValueSummaryQuery : IRequest<IEnumerable<EmployeeAssetValueSummaryDto>>;
+    public record GetEmployeeAssetValueSummaryQuery(string UserId) : IRequest<IEnumerable<EmployeeAssetValueSummaryDto>>;
     public class GetAuditTrailForAssetQuery : IRequest<IEnumerable<AuditTrailDto>>
     {
         public int AssetId { get; }
@@ -77,33 +77,39 @@ namespace AssetManagement.Application.UseCases.Report
     {
         private readonly IAssetRepository _assetRepository;
         private readonly IEmployeeRepository _employeeRepository;
+        private readonly IIdentityService _identityService;
         private readonly IMapper _mapper;
 
-        public ReportQueryHandler(IAssetRepository assetRepository, IEmployeeRepository employeeRepository, IMapper mapper)
+        public ReportQueryHandler(IAssetRepository assetRepository, IEmployeeRepository employeeRepository, IIdentityService identityService, IMapper mapper)
         {
             _assetRepository = assetRepository;
             _employeeRepository = employeeRepository;
+            _identityService = identityService;
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<AssetSummaryDto>> Handle(GetAssetSummaryByLocationQuery request, CancellationToken cancellationToken)
         {
-            return await _assetRepository.GetAssetSummaryByLocationAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            return await _assetRepository.GetAssetSummaryByLocationAsync(allowedLocations);
         }
 
         public async Task<IEnumerable<CategorySummaryDto>> Handle(GetAssetSummaryByCategoryQuery request, CancellationToken cancellationToken)
         {
-            return await _assetRepository.GetAssetSummaryByCategoryAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            return await _assetRepository.GetAssetSummaryByCategoryAsync(allowedLocations);
         }
 
         public async Task<IEnumerable<DirectorateAssignmentSummaryDto>> Handle(GetAssignmentSummaryByDirectorateQuery request, CancellationToken cancellationToken)
         {
-            return await _employeeRepository.GetAssignmentSummaryByDirectorateAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            return await _employeeRepository.GetAssignmentSummaryByDirectorateAsync(allowedLocations);
         }
 
         public async Task<IEnumerable<AssetStatusReportDto>> Handle(GetAssetStatusReportQuery request, CancellationToken cancellationToken)
         {
-            return await _assetRepository.GetAssetStatusReportAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            return await _assetRepository.GetAssetStatusReportAsync(allowedLocations);
         }
 
         public async Task<IEnumerable<MaintenanceRecordDto>> Handle(GetMaintenanceHistoryForAssetQuery request, CancellationToken cancellationToken)
@@ -140,7 +146,8 @@ namespace AssetManagement.Application.UseCases.Report
 
         public async Task<IEnumerable<EmployeeAssetValueSummaryDto>> Handle(GetEmployeeAssetValueSummaryQuery request, CancellationToken cancellationToken)
         {
-            return await _employeeRepository.GetEmployeeAssetValueSummaryAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            return await _employeeRepository.GetEmployeeAssetValueSummaryAsync(allowedLocations);
         }
 
         public async Task<IEnumerable<AuditTrailDto>> Handle(GetAuditTrailForAssetQuery request, CancellationToken cancellationToken)

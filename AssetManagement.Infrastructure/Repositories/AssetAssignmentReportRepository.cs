@@ -56,7 +56,7 @@ public class AssetAssignmentReportRepository : IAssetAssignmentReportRepository
                     LocationName = x.LocationName,
                     SerialNumber = x.AssetItem.SerialNumber,
                     Tag = x.AssetItem.Tag,
-                    AssignmentStatus = x.AssetItem.AssignmentStatus,
+                    AssignmentStatus = x.Assignment != null ? x.Assignment.AssignmentStatus : AssignmentStatus.Available,
                     ItemStatus = x.AssetItem.Status,
                     ItemSource = x.AssetItem.Source,
                     AssignedTo = e != null ? e.FirstName : null,
@@ -84,16 +84,27 @@ public class AssetAssignmentReportRepository : IAssetAssignmentReportRepository
             query = query.Where(x => x.AssetItem.LocationId == locationId.Value);
         }
 
-        return await query.Select(x => new NonRepairableAssetReportDto
-        {
-            AssetItemId = x.AssetItem.Id,
-            AssetName = x.AssetName,
-            LocationName = x.LocationName,
-            SerialNumber = x.AssetItem.SerialNumber,
-            Tag = x.AssetItem.Tag,
-            AssignmentStatus = x.AssetItem.AssignmentStatus,
-            ItemStatus = x.AssetItem.Status,
-            ItemSource = x.AssetItem.Source
-        }).ToListAsync(cancellationToken);
+        var result = await query
+            .GroupJoin(_context.Assignments,
+                x => x.AssetItem.Id,
+                ass => ass.AssetItemId,
+                (x, ass) => new { x.AssetItem, x.AssetName, x.LocationName, Assignments = ass })
+            .SelectMany(x => x.Assignments.DefaultIfEmpty(),
+                (x, ass) => new { x.AssetItem, x.AssetName, x.LocationName, Assignment = ass })
+            .Where(x => x.Assignment == null || x.Assignment.ReturnDate == null) // Get active or no assignment
+            .Select(x => new NonRepairableAssetReportDto
+            {
+                AssetItemId = x.AssetItem.Id,
+                AssetName = x.AssetName,
+                LocationName = x.LocationName,
+                SerialNumber = x.AssetItem.SerialNumber,
+                Tag = x.AssetItem.Tag,
+                AssignmentStatus = x.Assignment != null ? x.Assignment.AssignmentStatus : AssignmentStatus.Available,
+                ItemStatus = x.AssetItem.Status,
+                ItemSource = x.AssetItem.Source
+            })
+            .ToListAsync(cancellationToken);
+
+        return result;
     }
 }

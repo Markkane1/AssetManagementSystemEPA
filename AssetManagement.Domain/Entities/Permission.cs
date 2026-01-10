@@ -9,8 +9,8 @@ public class Permission : Entity, IAggregateRoot
     public string Category { get; private set; }
     public bool IsActive { get; private set; }
 
-    private readonly List<UserPermission> _userPermissions = new();
-    public IReadOnlyCollection<UserPermission> UserPermissions => _userPermissions.AsReadOnly();
+    private readonly List<RolePermission> _rolePermissions = new();
+    public IReadOnlyCollection<RolePermission> RolePermissions => _rolePermissions.AsReadOnly();
 
     // Required for EF Core
     protected Permission()

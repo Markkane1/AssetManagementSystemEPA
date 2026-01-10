@@ -1,4 +1,6 @@
-﻿namespace AssetManagement.Application.DTOs
+﻿using AssetManagement.Domain.Enums;
+
+namespace AssetManagement.Application.DTOs
 {
     public class AssignmentDto
     {
@@ -9,5 +11,9 @@
         public string EmployeeName { get; set; } = string.Empty;
         public DateTime AssignedDate { get; set; }
         public DateTime? ReturnedDate { get; set; }
+        public string? ReturnNotes { get; set; }
+        public int? AssignedByEmployeeId { get; set; }
+        public int? ReturnedByEmployeeId { get; set; }
+        public AssignmentStatus AssignmentStatus { get; set; }
     }
 }

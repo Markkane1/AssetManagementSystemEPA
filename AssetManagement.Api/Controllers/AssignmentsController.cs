@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AssetManagement.Api.Constants;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.UseCases.Assignment;
 using Microsoft.AspNetCore.Authorization;
@@ -21,13 +22,18 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<IEnumerable<AssignmentDto>>> GetAll()
         {
-            var assignments = await _mediator.Send(new GetAllAssignmentsQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var assignments = await _mediator.Send(new GetAllAssignmentsQuery(userId));
             return Ok(assignments);
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<AssignmentDto>> GetById(int id)
         {
             var query = new GetAssignmentByIdQuery(id); // Assume this exists
@@ -38,6 +44,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = Permissions.Assignments.Create)]
         public async Task<ActionResult<int>> Create([FromBody] AssignmentDto dto)
         {
             var command = new CreateAssignmentCommand(dto);
@@ -48,6 +55,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPut]
+        [Authorize(Policy = Permissions.Assignments.Update)]
         public async Task<IActionResult> Update([FromBody] AssignmentDto assignmentDto)
         {
             await _mediator.Send(new UpdateAssignmentCommand(assignmentDto));
@@ -55,21 +63,22 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.Assignments.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _mediator.Send(new DeleteAssignmentCommand(id));
             return NoContent();
         }
-        [Authorize(Roles = "Admin")]
         [HttpPost("return")]
+        [Authorize(Policy = Permissions.Assignments.Update)]
         public async Task<IActionResult> ReturnAssetItem([FromBody] ReturnAssetItemRequest request)
         {
             await _mediator.Send(new ReturnAssetItemCommand(request.AssetItemId, request.ReturnDate));
             return NoContent();
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost("reassign")]
+        [Authorize(Policy = Permissions.Assignments.Update)]
         public async Task<IActionResult> ReassignAssetItem([FromBody] ReassignAssetItemRequest request)
         {
             await _mediator.Send(new ReassignAssetItemCommand(request.AssignmentId, request.NewEmployeeId, request.AssignmentDate));
@@ -77,6 +86,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("by-employee/{employeeId}")]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<IEnumerable<AssignmentDto>>> GetAssignmentsByEmployee(int employeeId)
         {
             var assignments = await _mediator.Send(new GetAssignmentsByEmployeeQuery(employeeId));
@@ -84,6 +94,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("by-asset-item/{assetItemId}")]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<IEnumerable<AssignmentDto>>> GetAssignmentsByAssetItem(int assetItemId)
         {
             var assignments = await _mediator.Send(new GetAssignmentsByAssetItemQuery(assetItemId));
@@ -91,6 +102,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("history/employee/{employeeId}")]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<IEnumerable<AssignmentDto>>> GetAllAssignmentHistoryForEmployee(int employeeId)
         {
             var assignments = await _mediator.Send(new GetAllAssignmentHistoryForEmployeeQuery(employeeId));
@@ -98,6 +110,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("history/asset/{assetItemId}")]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<IEnumerable<AssignmentDto>>> GetAssignmentHistoryForAsset(int assetItemId)
         {
             var assignments = await _mediator.Send(new GetAssignmentHistoryForAssetQuery(assetItemId));
@@ -105,6 +118,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("by-date-range")]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<IEnumerable<AssignmentDto>>> GetAssignmentsByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             var assignments = await _mediator.Send(new GetAssignmentsByDateRangeQuery(startDate, endDate));
@@ -112,9 +126,13 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("overdue")]
+        [Authorize(Policy = Permissions.Assignments.Read)]
         public async Task<ActionResult<IEnumerable<AssignmentDto>>> GetOverdueAssignments()
         {
-            var assignments = await _mediator.Send(new GetOverdueAssignmentsQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var assignments = await _mediator.Send(new GetOverdueAssignmentsQuery(userId));
             return Ok(assignments);
         }
     }

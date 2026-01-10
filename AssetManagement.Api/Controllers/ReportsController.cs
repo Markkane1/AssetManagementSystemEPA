@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AssetManagement.Api.Constants;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.UseCases.Report;
 using Microsoft.AspNetCore.Authorization;
@@ -21,34 +22,51 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("asset-summary/location")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<AssetSummaryDto>>> GetAssetSummaryByLocation()
         {
-            var summary = await _mediator.Send(new GetAssetSummaryByLocationQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var summary = await _mediator.Send(new GetAssetSummaryByLocationQuery(userId));
             return Ok(summary);
         }
 
         [HttpGet("asset-summary/category")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<CategorySummaryDto>>> GetAssetSummaryByCategory()
         {
-            var summary = await _mediator.Send(new GetAssetSummaryByCategoryQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var summary = await _mediator.Send(new GetAssetSummaryByCategoryQuery(userId));
             return Ok(summary);
         }
 
         [HttpGet("assignment-summary/directorate")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<DirectorateAssignmentSummaryDto>>> GetAssignmentSummaryByDirectorate()
         {
-            var summary = await _mediator.Send(new GetAssignmentSummaryByDirectorateQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var summary = await _mediator.Send(new GetAssignmentSummaryByDirectorateQuery(userId));
             return Ok(summary);
         }
 
         [HttpGet("asset-status")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<AssetStatusReportDto>>> GetAssetStatusReport()
         {
-            var report = await _mediator.Send(new GetAssetStatusReportQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var report = await _mediator.Send(new GetAssetStatusReportQuery(userId));
             return Ok(report);
         }
 
         [HttpGet("maintenance-history/{assetItemId}")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<MaintenanceRecordDto>>> GetMaintenanceHistoryForAsset(int assetItemId)
         {
             var history = await _mediator.Send(new GetMaintenanceHistoryForAssetQuery(assetItemId));
@@ -56,6 +74,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("transfer-history/{assetItemId}")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<TransferHistoryDto>>> GetTransferHistoryForAsset(int assetItemId)
         {
             var history = await _mediator.Send(new GetTransferHistoryForAssetQuery(assetItemId));
@@ -63,6 +82,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("asset-utilization")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<UtilizationReportDto>>> GetAssetUtilizationReport()
         {
             var report = await _mediator.Send(new GetAssetUtilizationReportQuery());
@@ -70,6 +90,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("maintenance-cost")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<MaintenanceCostSummaryDto>>> GetMaintenanceCostSummary()
         {
             var summary = await _mediator.Send(new GetMaintenanceCostSummaryQuery());
@@ -77,6 +98,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("depreciation")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<DepreciationReportDto>>> GetAssetDepreciationReport()
         {
             var report = await _mediator.Send(new GetAssetDepreciationReportQuery());
@@ -84,6 +106,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("location-transfer")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<LocationTransferSummaryDto>>> GetLocationTransferSummary()
         {
             var summary = await _mediator.Send(new GetLocationTransferSummaryQuery());
@@ -91,13 +114,18 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("employee-asset-value")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<EmployeeAssetValueSummaryDto>>> GetEmployeeAssetValueSummary()
         {
-            var summary = await _mediator.Send(new GetEmployeeAssetValueSummaryQuery());
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var summary = await _mediator.Send(new GetEmployeeAssetValueSummaryQuery(userId));
             return Ok(summary);
         }
 
         [HttpGet("audit-trail/{assetId}")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<AuditTrailDto>>> GetAuditTrailForAsset(int assetId)
         {
             var auditTrail = await _mediator.Send(new GetAuditTrailForAssetQuery(assetId));
@@ -105,6 +133,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("overstock/{threshold}")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<OverstockReportDto>>> GetOverstockAssetsReport(int threshold)
         {
             var report = await _mediator.Send(new GetOverstockAssetsReportQuery(threshold));
@@ -112,12 +141,14 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("maintenance-due")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<MaintenanceDueReportDto>>> GetAssetMaintenanceDueReport([FromQuery] DateTime dueDate)
         {
             var report = await _mediator.Send(new GetAssetMaintenanceDueReportQuery(dueDate));
             return Ok(report);
         }
         [HttpGet("asset-assignment")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<AssetAssignmentReportDto>>> GetAssetAssignmentReport()
         {
             var report = await _mediator.Send(new GetAssetAssignmentReportQuery());
@@ -125,6 +156,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("non-repairable")]
+        [Authorize(Policy = Permissions.Reports.View)]
         public async Task<ActionResult<IEnumerable<NonRepairableAssetReportDto>>> GetAllAssetsThatAreNonRepairable([FromQuery] int? locationId = null)
         {
             var report = await _mediator.Send(new GetNonRepairableAssetsReportQuery(locationId));

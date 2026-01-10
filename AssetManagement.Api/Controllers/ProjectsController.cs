@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AssetManagement.Api.Constants;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.UseCases.Project;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = Permissions.Projects.Read)]
         public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll()
         {
             var projects = await _mediator.Send(new GetAllProjectsQuery());
@@ -27,30 +29,31 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = Permissions.Projects.Read)]
         public async Task<ActionResult<ProjectDto>> GetById(int id)
         {
             var project = await _mediator.Send(new GetProjectByIdQuery(id));
             return Ok(project);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost]
+        [Authorize(Policy = Permissions.Projects.Create)]
         public async Task<ActionResult<int>> Create([FromBody] ProjectDto projectDto)
         {
             var id = await _mediator.Send(new CreateProjectCommand(projectDto));
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPut]
+        [Authorize(Policy = Permissions.Projects.Update)]
         public async Task<IActionResult> Update([FromBody] ProjectDto projectDto)
         {
             await _mediator.Send(new UpdateProjectCommand(projectDto));
             return NoContent();
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.Projects.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _mediator.Send(new DeleteProjectCommand(id));

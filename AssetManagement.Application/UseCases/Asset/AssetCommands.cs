@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.Interfaces;
+using AssetManagement.Domain.ValueObjects;
 using AutoMapper;
 using MediatR;
 
@@ -26,7 +27,28 @@ namespace AssetManagement.Application.UseCases.Asset
 
         public async Task<int> Handle(CreateAssetCommand request, CancellationToken cancellationToken)
         {
-            var asset = _mapper.Map<Domain.Entities.Asset>(request.Asset);
+            var dto = request.Asset;
+            var price = Money.Create(dto.Price ?? 0, "USD");
+
+            var asset = new Domain.Entities.Asset(
+                dto.Name,
+                dto.AssetCode,
+                dto.CategoryId,
+                dto.PurchaseDate ?? DateTime.UtcNow, // Mapping PurchaseDate to AcquisitionDate or similar
+                price,
+                dto.Quantity,
+                dto.UntrackedQuantity,
+                dto.Manufacturer,
+                dto.Model,
+                dto.Specification,
+                dto.WarrantyEndDate,
+                "System", // Should ideally be from user context
+                DateTime.UtcNow
+            );
+
+            if (dto.VendorId.HasValue) asset.SetVendor(dto.VendorId.Value);
+            if (dto.PurchaseOrderId.HasValue) asset.SetPurchaseOrder(dto.PurchaseOrderId.Value);
+
             await _assetRepository.AddAsync(asset);
             return asset.Id;
         }
@@ -36,7 +58,23 @@ namespace AssetManagement.Application.UseCases.Asset
             var asset = await _assetRepository.GetByIdAsync(request.Asset.Id);
             if (asset == null)
                 throw new KeyNotFoundException($"Asset with ID {request.Asset.Id} not found.");
-            _mapper.Map(request.Asset, asset);
+
+            var dto = request.Asset;
+            asset.UpdateDetails(
+                dto.Name,
+                dto.AssetCode,
+                dto.Manufacturer,
+                dto.Model,
+                dto.Specification,
+                dto.PurchaseDate ?? asset.AcquisitionDate,
+                dto.WarrantyEndDate,
+                "System",
+                DateTime.UtcNow
+            );
+
+            if (dto.VendorId != asset.VendorId) asset.SetVendor(dto.VendorId);
+            if (dto.PurchaseOrderId != asset.PurchaseOrderId) asset.SetPurchaseOrder(dto.PurchaseOrderId);
+
             await _assetRepository.UpdateAsync(asset);
             return Unit.Value;
         }

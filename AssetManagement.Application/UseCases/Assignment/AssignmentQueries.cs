@@ -14,10 +14,10 @@ namespace AssetManagement.Application.UseCases.Assignment
     public record GetAllAssignmentHistoryForEmployeeQuery(int EmployeeId) : IRequest<IEnumerable<AssignmentDto>>;
     public record GetAssignmentHistoryForAssetQuery(int AssetItemId) : IRequest<IEnumerable<AssignmentDto>>;
     public record GetAssignmentsByDateRangeQuery(DateTime StartDate, DateTime EndDate) : IRequest<IEnumerable<AssignmentDto>>;
-    public record GetUnassignedAssetItemsQuery : IRequest<IEnumerable<AssetItemDto>>;
-    public record GetOverdueAssignmentsQuery : IRequest<IEnumerable<AssignmentDto>>;
+    public record GetUnassignedAssetItemsQuery(string UserId) : IRequest<IEnumerable<AssetItemDto>>;
+    public record GetOverdueAssignmentsQuery(string UserId) : IRequest<IEnumerable<AssignmentDto>>;
 
-    public class GetAllAssignmentsQuery : IRequest<IEnumerable<AssignmentDto>> { }
+    public record GetAllAssignmentsQuery(string UserId) : IRequest<IEnumerable<AssignmentDto>>;
 
     public class GetAssignmentByIdQuery : IRequest<AssignmentDto>
     {
@@ -41,19 +41,22 @@ namespace AssetManagement.Application.UseCases.Assignment
     {
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IAssetRepository _assetRepository;
+        private readonly IIdentityService _identityService;
         private readonly IMapper _mapper;
 
-        public AssignmentQueryHandler(IEmployeeRepository employeeRepository, IAssetRepository assetRepository, IMapper mapper)
+        public AssignmentQueryHandler(IEmployeeRepository employeeRepository, IAssetRepository assetRepository, IIdentityService identityService, IMapper mapper)
         {
             _employeeRepository = employeeRepository;
             _assetRepository = assetRepository;
+            _identityService = identityService;
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<AssignmentDto>> Handle(GetAllAssignmentsQuery request, CancellationToken cancellationToken)
         {
-            var assignments = await _employeeRepository.GetAllAsync();
-            var allAssignments = assignments.SelectMany(e => e.Assignments);
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            var employees = await _employeeRepository.GetAllEmployeesAsync(allowedLocations);
+            var allAssignments = employees.SelectMany(e => e.Assignments);
             return _mapper.Map<IEnumerable<AssignmentDto>>(allAssignments);
         }
 
@@ -68,6 +71,8 @@ namespace AssetManagement.Application.UseCases.Assignment
         }
         public async Task<IEnumerable<AssignmentDto>> Handle(GetAssignmentsByEmployeeQuery request, CancellationToken cancellationToken)
         {
+            // Note: We might want to check if the user has access to the employee's location here too.
+            // For now, we'll just pass the allowed locations to the repository.
             var assignments = await _employeeRepository.GetAssignmentsByEmployeeAsync(request.EmployeeId);
             return _mapper.Map<IEnumerable<AssignmentDto>>(assignments);
         }
@@ -104,13 +109,15 @@ namespace AssetManagement.Application.UseCases.Assignment
 
         public async Task<IEnumerable<AssetItemDto>> Handle(GetUnassignedAssetItemsQuery request, CancellationToken cancellationToken)
         {
-            var assetItems = await _assetRepository.GetUnassignedAssetItemsAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            var assetItems = await _assetRepository.GetUnassignedAssetItemsAsync(allowedLocations);
             return _mapper.Map<IEnumerable<AssetItemDto>>(assetItems);
         }
 
         public async Task<IEnumerable<AssignmentDto>> Handle(GetOverdueAssignmentsQuery request, CancellationToken cancellationToken)
         {
-            var assignments = await _employeeRepository.GetOverdueAssignmentsAsync();
+            var allowedLocations = await _identityService.GetAllowedLocationIdsAsync(request.UserId);
+            var assignments = await _employeeRepository.GetOverdueAssignmentsAsync(allowedLocations);
             return _mapper.Map<IEnumerable<AssignmentDto>>(assignments);
         }
     }

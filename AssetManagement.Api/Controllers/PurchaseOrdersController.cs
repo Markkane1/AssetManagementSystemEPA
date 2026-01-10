@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using AssetManagement.Api.Constants;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.UseCases.PurchaseOrder;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
@@ -19,6 +21,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = Permissions.PurchaseOrders.Read)]
         public async Task<ActionResult<IEnumerable<PurchaseOrderDto>>> GetAll()
         {
             var purchaseOrders = await _mediator.Send(new GetAllPurchaseOrdersQuery());
@@ -26,6 +29,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = Permissions.PurchaseOrders.Read)]
         public async Task<ActionResult<PurchaseOrderDto>> GetById(int id)
         {
             var purchaseOrder = await _mediator.Send(new GetPurchaseOrderByIdQuery(id));
@@ -33,6 +37,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = Permissions.PurchaseOrders.Create)]
         public async Task<ActionResult<int>> Create([FromBody] PurchaseOrderDto purchaseOrderDto)
         {
             var id = await _mediator.Send(new CreatePurchaseOrderCommand(purchaseOrderDto));
@@ -40,6 +45,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPut]
+        [Authorize(Policy = Permissions.PurchaseOrders.Update)]
         public async Task<IActionResult> Update([FromBody] PurchaseOrderDto purchaseOrderDto)
         {
             await _mediator.Send(new UpdatePurchaseOrderCommand(purchaseOrderDto));
@@ -47,6 +53,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.PurchaseOrders.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _mediator.Send(new DeletePurchaseOrderCommand(id));

@@ -2,10 +2,11 @@
 using AssetManagement.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using AssetManagement.Application.Interfaces;
 
 namespace AssetManagement.Infrastructure.Data
 {
-    public class AppDbContext : IdentityDbContext<IdentityUser>
+    public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -24,7 +25,9 @@ namespace AssetManagement.Infrastructure.Data
         public DbSet<MaintenanceRecord> MaintenanceRecords { get; set; }
         public DbSet<TransferHistory> TransferHistories { get; set; } = null!;
         public DbSet<Permission> Permissions { get; set; } = null!;
-        public DbSet<UserPermission> UserPermissions { get; set; } = null!;
+        public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+        public DbSet<UserLocationAccess> UserLocationAccess { get; set; } = null!;
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -26,8 +26,18 @@ namespace AssetManagement.Application.UseCases.AssetItem
 
         public async Task<int> Handle(CreateAssetItemCommand request, CancellationToken cancellationToken)
         {
+            var asset = await _assetRepository.GetByIdAsync(request.AssetItem.AssetId);
+            if (asset == null)
+                throw new KeyNotFoundException($"Asset with ID {request.AssetItem.AssetId} not found.");
+
             var assetItem = _mapper.Map<Domain.Entities.AssetItem>(request.AssetItem);
+
+            // This implicitly updates UntrackedQuantity and validates invariant
+            asset.AddAssetItem(assetItem);
+
             await _assetRepository.AddAssetItemAsync(assetItem);
+            await _assetRepository.UpdateAsync(asset); // Save the updated UntrackedQuantity
+
             return assetItem.Id;
         }
 

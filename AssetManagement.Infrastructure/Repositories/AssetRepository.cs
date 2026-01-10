@@ -20,17 +20,36 @@ namespace AssetManagement.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<AssetItem>> GetAllAssetItemsAsync(string userRole, int? userLocationId)
+        public async Task<IEnumerable<Asset>> GetAllAssetsAsync(IEnumerable<int>? allowedLocationIds = null)
+        {
+            var query = _context.Assets.Include(a => a.AssetItems).AsQueryable();
+            if (allowedLocationIds != null && allowedLocationIds.Any())
+            {
+                query = query.Where(a => a.AssetItems.Any(ai => allowedLocationIds.Contains(ai.LocationId)));
+            }
+            return await query.ToListAsync();
+        }
+
+        public override async Task<Asset> GetByIdAsync(int id)
+        {
+            return await _context.Assets
+                .Include(a => a.AssetItems)
+                .FirstOrDefaultAsync(a => a.Id == id) ?? throw new KeyNotFoundException($"Asset with ID {id} not found.");
+        }
+
+        public async Task<IEnumerable<AssetItem>> GetAllAssetItemsAsync(IEnumerable<int>? allowedLocationIds = null)
         {
             var query = _context.AssetItems.AsQueryable();
-            if (userRole != "Admin" && userLocationId.HasValue)
-                query = query.Where(ai => ai.LocationId == userLocationId.Value);
+            if (allowedLocationIds != null && allowedLocationIds.Any())
+                query = query.Where(ai => allowedLocationIds.Contains(ai.LocationId));
             return await query.ToListAsync();
         }
 
         public async Task<AssetItem> GetAssetItemByIdAsync(int id)
         {
-            return await _context.AssetItems.FindAsync(id) ?? throw new KeyNotFoundException($"AssetItem with ID {id} not found.");
+            return await _context.AssetItems
+                .Include(ai => ai.Assignments)
+                .FirstOrDefaultAsync(ai => ai.Id == id) ?? throw new KeyNotFoundException($"AssetItem with ID {id} not found.");
         }
 
         public async Task AddAssetItemAsync(AssetItem assetItem)
@@ -77,10 +96,14 @@ namespace AssetManagement.Infrastructure.Repositories
             };
         }
 
-        public async Task<IEnumerable<AssetItem>> GetUnassignedAssetItemsAsync()
+        public async Task<IEnumerable<AssetItem>> GetUnassignedAssetItemsAsync(IEnumerable<int>? allowedLocationIds = null)
         {
-            return await _context.AssetItems
-                .Where(ai => ai.AssignmentStatus == AssignmentStatus.Returned)
+            var query = _context.AssetItems.AsQueryable();
+            if (allowedLocationIds != null && allowedLocationIds.Any())
+                query = query.Where(ai => allowedLocationIds.Contains(ai.LocationId));
+
+            return await query
+                .Where(ai => !ai.Assignments.Any(a => a.ReturnDate == null))
                 .ToListAsync();
         }
 
@@ -105,9 +128,13 @@ namespace AssetManagement.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<AssetSummaryDto>> GetAssetSummaryByLocationAsync()
+        public async Task<IEnumerable<AssetSummaryDto>> GetAssetSummaryByLocationAsync(IEnumerable<int>? allowedLocationIds = null)
         {
-            return await _context.Locations
+            var query = _context.Locations.AsQueryable();
+            if (allowedLocationIds != null && allowedLocationIds.Any())
+                query = query.Where(l => allowedLocationIds.Contains(l.Id));
+
+            return await query
                 .Select(l => new AssetSummaryDto
                 {
                     LocationId = l.Id,
@@ -118,36 +145,56 @@ namespace AssetManagement.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<CategorySummaryDto>> GetAssetSummaryByCategoryAsync()
+        public async Task<IEnumerable<CategorySummaryDto>> GetAssetSummaryByCategoryAsync(IEnumerable<int>? allowedLocationIds = null)
         {
             return await _context.Categories
                 .Select(c => new CategorySummaryDto
                 {
                     CategoryId = c.Id,
                     CategoryName = c.Name,
-                    TotalAssets = c.Assets.Sum(a => a.Quantity),
-                    TotalValue = c.Assets.Sum(a => a.Price.Amount * a.Quantity)
+                    TotalAssets = c.Assets.SelectMany(a => a.AssetItems)
+                        .Where(ai => allowedLocationIds == null || !allowedLocationIds.Any() || allowedLocationIds.Contains(ai.LocationId))
+                        .Count(),
+                    TotalValue = c.Assets.SelectMany(a => a.AssetItems)
+                        .Where(ai => allowedLocationIds == null || !allowedLocationIds.Any() || allowedLocationIds.Contains(ai.LocationId))
+                        .Sum(ai => ai.Asset.Price.Amount)
                 })
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<AssetStatusReportDto>> GetAssetStatusReportAsync()
+        public async Task<IEnumerable<AssetStatusReportDto>> GetAssetStatusReportAsync(IEnumerable<int>? allowedLocationIds = null)
         {
-            return await _context.AssetItems
-                .GroupBy(ai => ai.AssignmentStatus)
+            var query = _context.AssetItems.AsQueryable();
+            if (allowedLocationIds != null && allowedLocationIds.Any())
+                query = query.Where(ai => allowedLocationIds.Contains(ai.LocationId));
+
+            var items = await query
+                .Include(ai => ai.Assignments)
+                .ToListAsync();
+
+            var grouped = items
+                .Select(ai => new
+                {
+                    AssetItem = ai,
+                    Status = ai.Assignments.Any(a => a.ReturnDate == null) ? AssignmentStatus.Assigned : AssignmentStatus.Returned // defaulting to Returned/Available
+                })
+                .GroupBy(x => x.Status)
                 .Select(g => new AssetStatusReportDto
                 {
                     AssignmentStatus = g.Key,
                     Count = g.Count(),
-                    AssetItems = g.Select(ai => new AssetItemDto(
-                        ai.Id,
-                        ai.AssetId,
-                        ai.LocationId,
-                        ai.SerialNumber,
-                        ai.Tag,
-                        ai.AssignmentStatus)).ToList()
+                    AssetItems = g.Select(x => new AssetItemDto(
+                        x.AssetItem.Id,
+                        x.AssetItem.AssetId,
+                        x.AssetItem.LocationId,
+                        x.AssetItem.SerialNumber,
+                        x.AssetItem.Tag,
+                        x.AssetItem.Status,
+                        x.AssetItem.Source)).ToList()
                 })
-                .ToListAsync();
+                .ToList();
+
+            return grouped;
         }
 
         public async Task<IEnumerable<MaintenanceRecord>> GetMaintenanceHistoryForAssetAsync(int assetItemId)
@@ -155,6 +202,22 @@ namespace AssetManagement.Infrastructure.Repositories
             return await _context.MaintenanceRecords
                 .Where(mr => mr.AssetItemId == assetItemId)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<MaintenanceRecord>> GetAllMaintenanceRecordsAsync(IEnumerable<int>? allowedLocationIds = null)
+        {
+            var query = _context.MaintenanceRecords.AsQueryable();
+            if (allowedLocationIds != null && allowedLocationIds.Any())
+                query = query.Where(mr => allowedLocationIds.Contains(mr.AssetItem.LocationId));
+            return await query.ToListAsync();
+        }
+
+        public async Task<MaintenanceRecord> GetMaintenanceRecordByIdAsync(int id)
+        {
+            return await _context.MaintenanceRecords
+                .Include(mr => mr.AssetItem)
+                .ThenInclude(ai => ai.Asset)
+                .FirstOrDefaultAsync(mr => mr.Id == id) ?? throw new KeyNotFoundException($"MaintenanceRecord with ID {id} not found.");
         }
 
         public async Task<IEnumerable<TransferHistory>> GetTransferHistoryForAssetAsync(int assetItemId)

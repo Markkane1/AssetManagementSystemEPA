@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using AssetManagement.Api.Constants;
 using AssetManagement.Application.DTOs;
 using AssetManagement.Application.UseCases.Directorate;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
@@ -19,6 +21,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = Permissions.Directorates.Read)]
         public async Task<ActionResult<IEnumerable<DirectorateDto>>> GetAll()
         {
             var directorates = await _mediator.Send(new GetAllDirectoratesQuery());
@@ -26,6 +29,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = Permissions.Directorates.Read)]
         public async Task<ActionResult<DirectorateDto>> GetById(int id)
         {
             var directorate = await _mediator.Send(new GetDirectorateByIdQuery(id));
@@ -33,6 +37,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = Permissions.Directorates.Create)]
         public async Task<ActionResult<int>> Create([FromBody] DirectorateDto directorateDto)
         {
             var id = await _mediator.Send(new CreateDirectorateCommand(directorateDto));
@@ -40,6 +45,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpPut]
+        [Authorize(Policy = Permissions.Directorates.Update)]
         public async Task<IActionResult> Update([FromBody] DirectorateDto directorateDto)
         {
             await _mediator.Send(new UpdateDirectorateCommand(directorateDto));
@@ -47,6 +53,7 @@ namespace AssetManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = Permissions.Directorates.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _mediator.Send(new DeleteDirectorateCommand(id));
