@@ -10,11 +10,13 @@
     <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/locations/new"))">
         Add Location
     </MudButton>
-    <MudTable Items="@_locations" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search locations..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_locations" Dense="true" Hover="true" Filter="FilterLocations">
         <HeaderContent>
-            <MudTh>Name</MudTh>
-            <MudTh>Head Office</MudTh>
-            <MudTh>District</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(location => location.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(location => location.IsHeadOffice)">Head Office</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(location => location.District)">District</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -28,11 +30,15 @@
                                OnClick="@(() => DeleteLocation(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<LocationDto> _locations = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,5 +56,17 @@
         {
             Snackbar.Add("Unable to delete location.", Severity.Error);
         }
+    }
+
+    private bool FilterLocations(LocationDto location)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return location.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || (location.District?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+               || (location.IsHeadOffice ? "yes" : "no").Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
     }
 }

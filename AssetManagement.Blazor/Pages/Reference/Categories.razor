@@ -10,10 +10,12 @@
     <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/categories/new"))">
         Add Category
     </MudButton>
-    <MudTable Items="@_categories" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search categories..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_categories" Dense="true" Hover="true" Filter="FilterCategories">
         <HeaderContent>
-            <MudTh>Name</MudTh>
-            <MudTh>Description</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(category => category.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(category => category.Description)">Description</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -26,11 +28,15 @@
                                OnClick="@(() => DeleteCategory(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<CategoryDto> _categories = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,5 +54,16 @@
         {
             Snackbar.Add("Unable to delete category.", Severity.Error);
         }
+    }
+
+    private bool FilterCategories(CategoryDto category)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return category.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || (category.Description?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 }

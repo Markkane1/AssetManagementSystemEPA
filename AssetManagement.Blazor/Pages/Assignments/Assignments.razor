@@ -15,12 +15,55 @@
         <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadAssignments">Load All</MudButton>
         <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadOverdue">Overdue</MudButton>
     </MudStack>
-    <MudTable Items="@_assignments" Dense="true" Hover="true">
+
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudSelect T="AssignmentFilterType" Label="Filter" @bind-Value="_filterType">
+                    @foreach (var option in Enum.GetValues<AssignmentFilterType>())
+                    {
+                        <MudSelectItem Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                @if (_filterType is AssignmentFilterType.ByEmployee or AssignmentFilterType.HistoryByEmployee)
+                {
+                    <MudSelect T="int" Label="Employee" @bind-Value="_employeeId">
+                        @foreach (var employee in _employees)
+                        {
+                            <MudSelectItem Value="@employee.Id">@employee.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else if (_filterType is AssignmentFilterType.ByAssetItem or AssignmentFilterType.HistoryByAssetItem)
+                {
+                    <MudNumericField T="int" Label="Asset Item Id" @bind-Value="_assetItemId" />
+                }
+            </MudItem>
+            <MudItem xs="12" md="4">
+                @if (_filterType == AssignmentFilterType.ByDateRange)
+                {
+                    <MudDatePicker Label="Start Date" @bind-Date="_startDate" />
+                    <MudDatePicker Label="End Date" @bind-Date="_endDate" Class="mt-2" />
+                }
+            </MudItem>
+        </MudGrid>
+        <MudStack Row="true" Spacing="2" Class="mt-3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ApplyFilter">Apply</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@LoadAssignments">Reset</MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search assignments..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+
+    <MudTable Items="@_assignments" Dense="true" Hover="true" Filter="FilterAssignments">
         <HeaderContent>
-            <MudTh>Asset Item</MudTh>
-            <MudTh>Employee</MudTh>
-            <MudTh>Assigned</MudTh>
-            <MudTh>Status</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(assignment => assignment.AssetItemSerialNumber)">Asset Item</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(assignment => assignment.EmployeeName)">Employee</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(assignment => assignment.AssignedDate)">Assigned</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(assignment => assignment.AssignmentStatus)">Status</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -31,18 +74,69 @@
             <MudTd>
                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
                                OnClick="@(() => NavigationManager.NavigateTo($"/assignments/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" Color="Color.Info"
+                               OnClick="@(() => OpenReassignDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.AssignmentReturn" Color="Color.Warning"
+                               OnClick="@(() => OpenReturnDialog(context))" />
                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
                                OnClick="@(() => DeleteAssignment(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
+<MudDialog @bind-IsVisible="_returnDialogOpen">
+    <DialogContent>
+        <MudText Typo="Typo.h6">Return Asset Item</MudText>
+        <MudText Typo="Typo.subtitle2">@_selectedAssignment?.AssetItemSerialNumber</MudText>
+        <MudDatePicker @bind-Date="_returnDate" Label="Return Date" Class="mt-3" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="@ConfirmReturn">Return</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@CloseReturnDialog">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<MudDialog @bind-IsVisible="_reassignDialogOpen">
+    <DialogContent>
+        <MudText Typo="Typo.h6">Reassign Asset Item</MudText>
+        <MudText Typo="Typo.subtitle2">@_selectedAssignment?.AssetItemSerialNumber</MudText>
+        <MudSelect T="int" Label="New Employee" @bind-Value="_reassignEmployeeId" Class="mt-3">
+            @foreach (var employee in _employees)
+            {
+                <MudSelectItem Value="@employee.Id">@employee.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudDatePicker @bind-Date="_reassignDate" Label="Assignment Date" Class="mt-2" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="@ConfirmReassign">Reassign</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@CloseReassignDialog">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
 @code {
     private List<AssignmentDto> _assignments = [];
+    private List<EmployeeDto> _employees = [];
+    private AssignmentFilterType _filterType = AssignmentFilterType.All;
+    private int _employeeId;
+    private int _assetItemId;
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private bool _returnDialogOpen;
+    private bool _reassignDialogOpen;
+    private DateTime? _returnDate = DateTime.Today;
+    private DateTime? _reassignDate = DateTime.Today;
+    private int _reassignEmployeeId;
+    private AssignmentDto? _selectedAssignment;
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
+        _employees = await EmployeeService.GetAllAsync();
         await LoadAssignments();
     }
 
@@ -56,6 +150,86 @@
         _assignments = await AssignmentService.GetOverdueAsync();
     }
 
+    private async Task ApplyFilter()
+    {
+        _assignments = _filterType switch
+        {
+            AssignmentFilterType.ByEmployee when _employeeId > 0 =>
+                await AssignmentService.GetByEmployeeAsync(_employeeId),
+            AssignmentFilterType.ByAssetItem when _assetItemId > 0 =>
+                await AssignmentService.GetByAssetItemAsync(_assetItemId),
+            AssignmentFilterType.HistoryByEmployee when _employeeId > 0 =>
+                await AssignmentService.GetHistoryForEmployeeAsync(_employeeId),
+            AssignmentFilterType.HistoryByAssetItem when _assetItemId > 0 =>
+                await AssignmentService.GetHistoryForAssetAsync(_assetItemId),
+            AssignmentFilterType.ByDateRange when _startDate.HasValue && _endDate.HasValue =>
+                await AssignmentService.GetByDateRangeAsync(_startDate.Value, _endDate.Value),
+            AssignmentFilterType.Overdue => await AssignmentService.GetOverdueAsync(),
+            _ => await AssignmentService.GetAllAsync()
+        };
+    }
+
+    private void OpenReturnDialog(AssignmentDto assignment)
+    {
+        _selectedAssignment = assignment;
+        _returnDate = DateTime.Today;
+        _returnDialogOpen = true;
+    }
+
+    private void CloseReturnDialog()
+    {
+        _returnDialogOpen = false;
+        _selectedAssignment = null;
+    }
+
+    private async Task ConfirmReturn()
+    {
+        if (_selectedAssignment is null || !_returnDate.HasValue)
+        {
+            Snackbar.Add("Select an assignment and return date.", Severity.Warning);
+            return;
+        }
+
+        var success = await AssignmentService.ReturnAsync(_selectedAssignment.AssetItemId, _returnDate.Value);
+        Snackbar.Add(success ? "Asset item returned." : "Unable to return asset item.", success ? Severity.Success : Severity.Error);
+        if (success)
+        {
+            _returnDialogOpen = false;
+            await LoadAssignments();
+        }
+    }
+
+    private void OpenReassignDialog(AssignmentDto assignment)
+    {
+        _selectedAssignment = assignment;
+        _reassignDate = DateTime.Today;
+        _reassignEmployeeId = assignment.EmployeeId;
+        _reassignDialogOpen = true;
+    }
+
+    private void CloseReassignDialog()
+    {
+        _reassignDialogOpen = false;
+        _selectedAssignment = null;
+    }
+
+    private async Task ConfirmReassign()
+    {
+        if (_selectedAssignment is null || _reassignEmployeeId <= 0 || !_reassignDate.HasValue)
+        {
+            Snackbar.Add("Select employee and assignment date.", Severity.Warning);
+            return;
+        }
+
+        var success = await AssignmentService.ReassignAsync(_selectedAssignment.Id, _reassignEmployeeId, _reassignDate.Value);
+        Snackbar.Add(success ? "Assignment reassigned." : "Unable to reassign.", success ? Severity.Success : Severity.Error);
+        if (success)
+        {
+            _reassignDialogOpen = false;
+            await LoadAssignments();
+        }
+    }
+
     private async Task DeleteAssignment(int id)
     {
         if (await AssignmentService.DeleteAsync(id))
@@ -67,5 +241,28 @@
         {
             Snackbar.Add("Unable to delete assignment.", Severity.Error);
         }
+    }
+
+    private bool FilterAssignments(AssignmentDto assignment)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return assignment.AssetItemSerialNumber.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || assignment.EmployeeName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || assignment.AssignmentStatus.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private enum AssignmentFilterType
+    {
+        All,
+        ByEmployee,
+        ByAssetItem,
+        HistoryByEmployee,
+        HistoryByAssetItem,
+        ByDateRange,
+        Overdue
     }
 }
