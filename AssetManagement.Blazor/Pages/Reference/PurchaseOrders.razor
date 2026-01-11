@@ -10,11 +10,13 @@
     <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/purchase-orders/new"))">
         Add Purchase Order
     </MudButton>
-    <MudTable Items="@_orders" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search purchase orders..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_orders" Dense="true" Hover="true" Filter="FilterOrders">
         <HeaderContent>
-            <MudTh>Order Number</MudTh>
-            <MudTh>Order Date</MudTh>
-            <MudTh>Vendor</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(order => order.OrderNumber)">Order Number</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(order => order.OrderDate)">Order Date</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(order => order.VendorName)">Vendor</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -28,11 +30,15 @@
                                OnClick="@(() => DeleteOrder(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<PurchaseOrderDto> _orders = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,5 +56,16 @@
         {
             Snackbar.Add("Unable to delete purchase order.", Severity.Error);
         }
+    }
+
+    private bool FilterOrders(PurchaseOrderDto order)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return order.OrderNumber.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || (order.VendorName?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 }

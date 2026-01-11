@@ -10,11 +10,13 @@
     <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/projects/new"))">
         Add Project
     </MudButton>
-    <MudTable Items="@_projects" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search projects..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_projects" Dense="true" Hover="true" Filter="FilterProjects">
         <HeaderContent>
-            <MudTh>Name</MudTh>
-            <MudTh>Description</MudTh>
-            <MudTh>Run By</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(project => project.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(project => project.ProjectDescription)">Description</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(project => project.ProjectRunBy)">Run By</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -28,11 +30,15 @@
                                OnClick="@(() => DeleteProject(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<ProjectDto> _projects = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,5 +56,17 @@
         {
             Snackbar.Add("Unable to delete project.", Severity.Error);
         }
+    }
+
+    private bool FilterProjects(ProjectDto project)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return project.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || (project.ProjectDescription?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+               || (project.ProjectRunBy?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 }

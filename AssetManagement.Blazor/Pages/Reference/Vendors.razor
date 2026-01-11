@@ -10,11 +10,13 @@
     <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/vendors/new"))">
         Add Vendor
     </MudButton>
-    <MudTable Items="@_vendors" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search vendors..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_vendors" Dense="true" Hover="true" Filter="FilterVendors">
         <HeaderContent>
-            <MudTh>Name</MudTh>
-            <MudTh>Address</MudTh>
-            <MudTh>Contact</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(vendor => vendor.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(vendor => vendor.Address)">Address</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(vendor => vendor.ContactNumber)">Contact</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -28,11 +30,15 @@
                                OnClick="@(() => DeleteVendor(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<VendorDto> _vendors = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,5 +56,17 @@
         {
             Snackbar.Add("Unable to delete vendor.", Severity.Error);
         }
+    }
+
+    private bool FilterVendors(VendorDto vendor)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return vendor.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || (vendor.Address?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+               || (vendor.ContactNumber?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 }

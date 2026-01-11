@@ -1,0 +1,120 @@
+@page "/account"
+@inject AuthService AuthService
+@inject ISnackbar Snackbar
+
+<PageTitle>My Account</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">My Account</MudText>
+    <MudText Typo="Typo.subtitle2">View your profile information and manage your session.</MudText>
+
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h6">Profile</MudText>
+        @if (_currentUser is null)
+        {
+            <MudText Color="Color.Error">Profile information is unavailable.</MudText>
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Username</MudText>
+                    <MudText>@_currentUser.Username</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Email</MudText>
+                    <MudText>@_currentUser.Email</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">First Name</MudText>
+                    <MudText>@_currentUser.FirstName</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Last Name</MudText>
+                    <MudText>@_currentUser.LastName</MudText>
+                </MudItem>
+            </MudGrid>
+
+            @if (_currentUser.Permissions is { Count: > 0 })
+            {
+                <MudText Typo="Typo.subtitle2" Class="mt-4">Permissions</MudText>
+                <MudChipSet T="string" Class="mt-2">
+                    @foreach (var permission in _currentUser.Permissions)
+                    {
+                        <MudChip T="string">@permission</MudChip>
+                    }
+                </MudChipSet>
+            }
+        }
+
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadProfile">
+                Refresh Profile
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h6">Session</MudText>
+        @if (_session is null)
+        {
+            <MudText Color="Color.Error">No active session found.</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.subtitle2">Expires At</MudText>
+            <MudText>@_session.ExpiresAt.ToLocalTime()</MudText>
+        }
+
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@RefreshSession">
+                Refresh Token
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private AuthSession? _session;
+    private UserInfoDto? _currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSession();
+        await LoadProfile();
+    }
+
+    private async Task LoadSession()
+    {
+        _session = await AuthService.GetSessionAsync();
+    }
+
+    private async Task LoadProfile()
+    {
+        _currentUser = await AuthService.GetCurrentUserAsync();
+        if (_currentUser is null)
+        {
+            Snackbar.Add("Unable to load profile details.", Severity.Warning);
+        }
+    }
+
+    private async Task RefreshSession()
+    {
+        if (_session is null || string.IsNullOrWhiteSpace(_session.Token) || string.IsNullOrWhiteSpace(_session.RefreshToken))
+        {
+            Snackbar.Add("No refresh token available.", Severity.Warning);
+            return;
+        }
+
+        var response = await AuthService.RefreshTokenAsync(_session.Token, _session.RefreshToken);
+        if (response is null)
+        {
+            Snackbar.Add("Unable to refresh session.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Session refreshed.", Severity.Success);
+        await LoadSession();
+        await LoadProfile();
+    }
+}

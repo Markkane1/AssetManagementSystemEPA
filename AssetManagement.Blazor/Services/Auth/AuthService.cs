@@ -26,7 +26,16 @@ public class AuthService
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto loginDto)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/auth/login", loginDto);
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.PostAsJsonAsync("api/auth/login", loginDto);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             return null;
@@ -44,7 +53,16 @@ public class AuthService
 
     public async Task<AuthResponseDto?> RegisterAsync(RegisterDto registerDto)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/auth/register", registerDto);
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.PostAsJsonAsync("api/auth/register", registerDto);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             return null;
@@ -62,8 +80,17 @@ public class AuthService
 
     public async Task<AuthResponseDto?> RefreshTokenAsync(string accessToken, string refreshToken)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/auth/refresh-token",
-            new RefreshTokenRequest(accessToken, refreshToken));
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.PostAsJsonAsync("api/auth/refresh-token",
+                new RefreshTokenRequest(accessToken, refreshToken));
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             return null;
@@ -81,7 +108,16 @@ public class AuthService
 
     public async Task<UserInfoDto?> GetCurrentUserAsync()
     {
-        var response = await _httpClient.GetAsync("api/auth/me");
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.GetAsync("api/auth/me");
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             return null;

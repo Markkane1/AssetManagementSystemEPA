@@ -13,13 +13,15 @@
         </MudButton>
         <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadRecords">Refresh</MudButton>
     </MudStack>
-    <MudTable Items="@_records" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search maintenance..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_records" Dense="true" Hover="true" Filter="FilterRecords">
         <HeaderContent>
-            <MudTh>Asset Item</MudTh>
-            <MudTh>Date</MudTh>
-            <MudTh>Description</MudTh>
-            <MudTh>Status</MudTh>
-            <MudTh>Cost</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(record => record.AssetItemSerialNumber)">Asset Item</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(record => record.Date)">Date</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(record => record.Description)">Description</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(record => record.Status)">Status</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(record => record.Cost)">Cost</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -35,11 +37,15 @@
                                OnClick="@(() => DeleteRecord(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<MaintenanceRecordDto> _records = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,5 +68,17 @@
         {
             Snackbar.Add("Unable to delete record.", Severity.Error);
         }
+    }
+
+    private bool FilterRecords(MaintenanceRecordDto record)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return record.AssetItemSerialNumber.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || (record.Description?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+               || (record.Status?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 }

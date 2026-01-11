@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using AssetManagement.Blazor.Models;
 using Blazored.LocalStorage;
@@ -22,6 +23,17 @@ public class ApiAuthMessageHandler : DelegatingHandler
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session.Token);
         }
 
-        return await base.SendAsync(request, cancellationToken);
+        try
+        {
+            return await base.SendAsync(request, cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            {
+                RequestMessage = request,
+                ReasonPhrase = "API unreachable"
+            };
+        }
     }
 }

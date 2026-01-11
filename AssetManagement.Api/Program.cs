@@ -24,7 +24,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("BlazorPolicy", policy =>
     {
         // Allow the React dev origin (exact scheme+host+port)
-        policy.WithOrigins("http://localhost:8080", "https://localhost:8080")
+        policy.WithOrigins(
+                  "http://localhost:3000",
+                  "https://localhost:3000",
+                  "http://localhost:8080",
+                  "https://localhost:8080"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               // If your client sends cookies or credentials, enable this.
