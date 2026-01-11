@@ -1,9 +1,10 @@
 namespace AssetManagement.Application.DTOs.Auth;
 
-public record RegisterDto(
-    string Email,
-    string Username,
-    string Password,
-    string FirstName,
-    string LastName
-);
+public record RegisterDto
+{
+    public string Email { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}

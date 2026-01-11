@@ -19,7 +19,7 @@
 </MudPaper>
 
 @code {
-    private readonly LoginDto _model = new(string.Empty, string.Empty);
+    private readonly LoginDto _model = new LoginDto();
     private MudForm? _form;
 
     private async Task HandleLogin()

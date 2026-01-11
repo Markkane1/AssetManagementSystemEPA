@@ -10,7 +10,7 @@
     <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Location" : "Create Location")</MudText>
     <MudForm @ref="_form">
         <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
-        <MudSwitch @bind-Checked="_model.IsHeadOffice" Color="Color.Primary" Label="Head Office" Class="mt-2" />
+        <MudSwitch T="bool" @bind-Checked="_model.IsHeadOffice" Color="Color.Primary" Label="Head Office" Class="mt-2" />
         <MudTextField @bind-Value="_model.District" Label="District" />
         <MudStack Row="true" Spacing="2" Class="mt-4">
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>

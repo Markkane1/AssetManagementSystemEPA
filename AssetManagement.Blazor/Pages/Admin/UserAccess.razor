@@ -12,7 +12,11 @@
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAccess">Load</MudButton>
     </MudStack>
 
-    <MudSelect T="int" Label="Locations" @bind-SelectedValues="_selectedLocations" MultiSelection="true" Class="mt-4">
+    <MudSelect T="int" 
+               Label="Locations" 
+               @bind-SelectedValues="_selectedLocations" 
+               MultiSelection="true" 
+               Class="mt-4">
         @foreach (var location in _locations)
         {
             <MudSelectItem Value="@location.Id">@location.Name</MudSelectItem>
@@ -27,7 +31,7 @@
 @code {
     private string _userId = string.Empty;
     private List<LocationDto> _locations = [];
-    private HashSet<int> _selectedLocations = [];
+    private IEnumerable<int> _selectedLocations = new HashSet<int>();
 
     protected override async Task OnInitializedAsync()
     {

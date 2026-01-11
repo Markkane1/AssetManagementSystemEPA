@@ -9,7 +9,7 @@
     <MudItem xs="12" md="4">
         <MudPaper Class="pa-4">
             <MudText Typo="Typo.h6">Roles</MudText>
-            <MudList Dense="true">
+            <MudList T="string" Dense="true">
                 @foreach (var role in _roles)
                 {
                     <MudListItem Selected="@(_selectedRole == role)" OnClick="@(() => SelectRole(role))">
@@ -68,10 +68,10 @@
         <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@RemoveUserFromRole">Remove</MudButton>
         <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadUserRoles">Load Roles</MudButton>
     </MudStack>
-    <MudChipSet Class="mt-2">
+    <MudChipSet T="string" Class="mt-2">
         @foreach (var role in _userRoles)
         {
-            <MudChip>@role</MudChip>
+            <MudChip T="string">@role</MudChip>
         }
     </MudChipSet>
 </MudPaper>

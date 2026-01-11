@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using AssetManagement.Blazor.Models;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace AssetManagement.Blazor.Services.Auth;
@@ -48,5 +49,11 @@ public class AuthStateProvider : AuthenticationStateProvider
         await _localStorage.RemoveItemAsync(StorageKey);
         var anonymous = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         NotifyAuthenticationStateChanged(Task.FromResult(anonymous));
+    }
+
+    // Add this protected method to expose the base class method
+    protected void NotifyAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        base.NotifyAuthenticationStateChanged(task);
     }
 }
