@@ -1,0 +1,76 @@
+@page "/employees/new"
+@page "/employees/edit/{Id:int}"
+@inject EmployeeService EmployeeService
+@inject DirectorateService DirectorateService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Employee" : "New Employee")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Employee" : "Create Employee")</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
+        <MudTextField @bind-Value="_model.Email" Label="Email" Required="true" />
+        <MudSelect T="int" Label="Directorate" @bind-Value="_model.DirectorateId">
+            @foreach (var directorate in _directorates)
+            {
+                <MudSelectItem Value="@directorate.Id">@directorate.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/employees"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool _isEdit => Id.HasValue;
+    private EmployeeDto _model = new();
+    private MudForm? _form;
+    private List<DirectorateDto> _directorates = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _directorates = await DirectorateService.GetAllAsync();
+
+        if (_isEdit)
+        {
+            var employee = await EmployeeService.GetByIdAsync(Id!.Value);
+            if (employee != null)
+            {
+                _model = employee;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = _isEdit
+            ? await EmployeeService.UpdateAsync(_model)
+            : await EmployeeService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Employee saved.", Severity.Success);
+            NavigationManager.NavigateTo("/employees");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save employee.", Severity.Error);
+        }
+    }
+}

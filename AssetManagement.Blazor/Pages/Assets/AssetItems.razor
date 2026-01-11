@@ -1,0 +1,248 @@
+@page "/asset-items"
+@inject AssetItemService AssetItemService
+@inject AssetService AssetService
+@inject LocationService LocationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Asset Items</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Asset Items</MudText>
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/asset-items/new"))">
+            Add Asset Item
+        </MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadUnassigned">Load Unassigned</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadItems">Load All</MudButton>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenTransferDialog">
+            Transfer Selected
+        </MudButton>
+    </MudStack>
+
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudSelect T="ItemFilterType" Label="Filter" @bind-Value="_filterType">
+                    @foreach (var option in Enum.GetValues<ItemFilterType>())
+                    {
+                        <MudSelectItem Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                @if (_filterType == ItemFilterType.ByAsset)
+                {
+                    <MudSelect T="int" Label="Asset" @bind-Value="_assetId">
+                        @foreach (var asset in _assets)
+                        {
+                            <MudSelectItem Value="@asset.Id">@asset.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else if (_filterType == ItemFilterType.ByLocation)
+                {
+                    <MudSelect T="int" Label="Location" @bind-Value="_locationFilterId">
+                        @foreach (var location in _locations)
+                        {
+                            <MudSelectItem Value="@location.Id">@location.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else if (_filterType == ItemFilterType.ByStatus)
+                {
+                    <MudSelect T="ItemStatus" Label="Status" @bind-Value="_statusFilter">
+                        @foreach (var status in Enum.GetValues<ItemStatus>())
+                        {
+                            <MudSelectItem Value="@status">@status</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+            </MudItem>
+        </MudGrid>
+        <MudStack Row="true" Spacing="2" Class="mt-3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ApplyFilter">Apply</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@LoadItems">Reset</MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search asset items..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+
+    <MudTable Items="@_items" Dense="true" Hover="true" MultiSelection="true" @bind-SelectedItems="_selectedItems" Filter="FilterItems">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="@(item => item.Tag)">Tag</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(item => item.SerialNumber)">Serial</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(item => GetAssetName(item.AssetId))">Asset</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(item => GetLocationName(item.LocationId))">Location</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(item => item.Status)">Status</MudTableSortLabel></MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Tag</MudTd>
+            <MudTd>@context.SerialNumber</MudTd>
+            <MudTd>@GetAssetName(context.AssetId)</MudTd>
+            <MudTd>@GetLocationName(context.LocationId)</MudTd>
+            <MudTd>@context.Status</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/asset-items/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteItem(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudStack>
+
+<MudDialog @bind-IsVisible="_transferDialogOpen">
+    <DialogContent>
+        <MudText Typo="Typo.h6">Transfer Asset Items</MudText>
+        <MudSelect T="int" Label="Target Location" @bind-Value="_transferLocationId" Class="mt-3">
+            @foreach (var location in _locations)
+            {
+                <MudSelectItem Value="@location.Id">@location.Name</MudSelectItem>
+            }
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="@ConfirmTransfer">Transfer</MudButton>
+        <MudButton Color="Color.Secondary" Variant="Variant.Text" OnClick="@CloseTransferDialog">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<AssetItemDto> _items = [];
+    private HashSet<AssetItemDto> _selectedItems = [];
+    private bool _transferDialogOpen;
+    private int _transferLocationId;
+    private List<LocationDto> _locations = [];
+    private List<AssetDto> _assets = [];
+    private ItemFilterType _filterType = ItemFilterType.All;
+    private int _assetId;
+    private int _locationFilterId;
+    private ItemStatus _statusFilter;
+    private string _searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _assets = await AssetService.GetAllAsync();
+        _locations = await LocationService.GetAllAsync();
+        await LoadItems();
+    }
+
+    private async Task LoadItems()
+    {
+        _items = await AssetItemService.GetAllAsync();
+    }
+
+    private async Task LoadUnassigned()
+    {
+        _items = await AssetItemService.GetUnassignedAsync();
+    }
+
+    private async Task ApplyFilter()
+    {
+        if (_filterType == ItemFilterType.Unassigned)
+        {
+            await LoadUnassigned();
+            return;
+        }
+
+        var items = await AssetItemService.GetAllAsync();
+        _items = _filterType switch
+        {
+            ItemFilterType.ByAsset when _assetId > 0 => items.Where(item => item.AssetId == _assetId).ToList(),
+            ItemFilterType.ByLocation when _locationFilterId > 0 => items.Where(item => item.LocationId == _locationFilterId).ToList(),
+            ItemFilterType.ByStatus => items.Where(item => item.Status == _statusFilter).ToList(),
+            _ => items
+        };
+    }
+
+    private void OpenTransferDialog()
+    {
+        _transferDialogOpen = true;
+    }
+
+    private void CloseTransferDialog()
+    {
+        _transferDialogOpen = false;
+    }
+
+    private async Task ConfirmTransfer()
+    {
+        var ids = _selectedItems.Select(item => item.Id).ToArray();
+        if (ids.Length == 0 || _transferLocationId == 0)
+        {
+            Snackbar.Add("Select items and a target location.", Severity.Warning);
+            return;
+        }
+
+        var success = await AssetItemService.TransferAsync(ids, _transferLocationId);
+        if (success)
+        {
+            Snackbar.Add("Assets transferred.", Severity.Success);
+            _transferDialogOpen = false;
+            _selectedItems.Clear();
+            await LoadItems();
+        }
+        else
+        {
+            Snackbar.Add("Transfer failed.", Severity.Error);
+        }
+    }
+
+    private async Task DeleteItem(int id)
+    {
+        if (await AssetItemService.DeleteAsync(id))
+        {
+            Snackbar.Add("Asset item deleted.", Severity.Success);
+            await LoadItems();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete asset item.", Severity.Error);
+        }
+    }
+
+    private string GetAssetName(int assetId)
+    {
+        var asset = _assets.FirstOrDefault(item => item.Id == assetId);
+        return asset?.Name ?? assetId.ToString();
+    }
+
+    private string GetLocationName(int locationId)
+    {
+        var location = _locations.FirstOrDefault(item => item.Id == locationId);
+        return location?.Name ?? locationId.ToString();
+    }
+
+    private bool FilterItems(AssetItemDto item)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        var assetName = GetAssetName(item.AssetId);
+        var locationName = GetLocationName(item.LocationId);
+
+        return item.Tag.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || item.SerialNumber.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || assetName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || locationName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || item.Status.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private enum ItemFilterType
+    {
+        All,
+        ByAsset,
+        ByLocation,
+        ByStatus,
+        Unassigned
+    }
+}

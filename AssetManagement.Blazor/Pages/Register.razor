@@ -1,0 +1,51 @@
+@page "/register"
+@attribute [AllowAnonymous]
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudPaper Class="pa-6 mx-auto" MaxWidth="420px" Elevation="1">
+    <MudText Typo="Typo.h5" Class="mb-4">Create Account</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Email" Label="Email" Required="true" />
+        <MudTextField @bind-Value="_model.Username" Label="Username" Required="true" />
+        <MudTextField @bind-Value="_model.FirstName" Label="First Name" Required="true" />
+        <MudTextField @bind-Value="_model.LastName" Label="Last Name" Required="true" />
+        <MudTextField @bind-Value="_model.Password" Label="Password" InputType="InputType.Password" Required="true" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@HandleRegister" Class="mt-4" FullWidth="true">
+            Register
+        </MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/login"))" Class="mt-2" FullWidth="true">
+            Back to login
+        </MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private RegisterDto _model = new RegisterDto();
+    private MudForm? _form;
+
+    private async Task HandleRegister()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var response = await AuthService.RegisterAsync(_model);
+        if (response is null)
+        {
+            Snackbar.Add("Registration failed. Please try again.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Account created successfully!", Severity.Success);
+        NavigationManager.NavigateTo("/");
+    }
+}

@@ -1,0 +1,196 @@
+@page "/assets"
+@inject AssetService AssetService
+@inject CategoryService CategoryService
+@inject LocationService LocationService
+@inject VendorService VendorService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Assets</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Assets</MudText>
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudSelect T="AssetFilterType" Label="Filter" @bind-Value="_filterType">
+                    @foreach (var option in Enum.GetValues<AssetFilterType>())
+                    {
+                        <MudSelectItem Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                @if (_filterType == AssetFilterType.ByLocation)
+                {
+                    <MudSelect T="int" Label="Location" @bind-Value="_locationId">
+                        @foreach (var location in _locations)
+                        {
+                            <MudSelectItem Value="@location.Id">@location.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else if (_filterType == AssetFilterType.ByCategory)
+                {
+                    <MudSelect T="int" Label="Category" @bind-Value="_categoryId">
+                        @foreach (var category in _categories)
+                        {
+                            <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else if (_filterType == AssetFilterType.ByVendor)
+                {
+                    <MudSelect T="int" Label="Vendor" @bind-Value="_vendorId">
+                        @foreach (var vendor in _vendors)
+                        {
+                            <MudSelectItem Value="@vendor.Id">@vendor.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else if (_filterType == AssetFilterType.BySource)
+                {
+                    <MudNumericField T="int" Label="Source Id" @bind-Value="_sourceId" />
+                    <MudSelect T="AssetSource" Label="Source Type" @bind-Value="_source" Class="mt-2">
+                        @foreach (var source in Enum.GetValues<AssetSource>())
+                        {
+                            <MudSelectItem Value="@source">@source</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else if (_filterType == AssetFilterType.LowStock)
+                {
+                    <MudNumericField T="int" Label="Threshold" @bind-Value="_threshold" />
+                }
+            </MudItem>
+            <MudItem xs="12" md="4">
+                @if (_filterType == AssetFilterType.ByAcquisitionDate)
+                {
+                    <MudDatePicker Label="Start Date" @bind-Date="_startDate" />
+                    <MudDatePicker Label="End Date" @bind-Date="_endDate" Class="mt-2" />
+                }
+            </MudItem>
+        </MudGrid>
+        <MudStack Row="true" Spacing="2" Class="mt-3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ApplyFilter">Apply</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@LoadAssets">Reset</MudButton>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/assets/new"))">
+                Add Asset
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search assets..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+
+    <MudTable Items="@_assets" Dense="true" Hover="true" Filter="FilterAssets">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.AssetCode)">Asset Code</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.CategoryName)">Category</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.Quantity)">Quantity</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.Source)">Source</MudTableSortLabel></MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Asset Code">@context.AssetCode</MudTd>
+            <MudTd DataLabel="Category">@context.CategoryName</MudTd>
+            <MudTd DataLabel="Quantity">@context.Quantity</MudTd>
+            <MudTd DataLabel="Source">@context.Source</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/assets/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteAsset(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<AssetDto> _assets = [];
+    private List<CategoryDto> _categories = [];
+    private List<LocationDto> _locations = [];
+    private List<VendorDto> _vendors = [];
+
+    private AssetFilterType _filterType = AssetFilterType.All;
+    private int _locationId;
+    private int _categoryId;
+    private int _vendorId;
+    private int _sourceId;
+    private AssetSource _source;
+    private int _threshold = 1;
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private string _searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await CategoryService.GetAllAsync();
+        _locations = await LocationService.GetAllAsync();
+        _vendors = await VendorService.GetAllAsync();
+        await LoadAssets();
+    }
+
+    private async Task LoadAssets()
+    {
+        _assets = await AssetService.GetAllAsync();
+    }
+
+    private async Task ApplyFilter()
+    {
+        _assets = _filterType switch
+        {
+            AssetFilterType.ByLocation when _locationId > 0 => await AssetService.GetByLocationAsync(_locationId),
+            AssetFilterType.ByCategory when _categoryId > 0 => await AssetService.GetByCategoryAsync(_categoryId),
+            AssetFilterType.ByVendor when _vendorId > 0 => await AssetService.GetByVendorAsync(_vendorId),
+            AssetFilterType.BySource when _sourceId > 0 => await AssetService.GetBySourceAsync(_sourceId, _source.ToString()),
+            AssetFilterType.ByAcquisitionDate when _startDate.HasValue && _endDate.HasValue =>
+                await AssetService.GetByAcquisitionDateAsync(_startDate.Value, _endDate.Value),
+            AssetFilterType.LowStock => await AssetService.GetLowStockAsync(_threshold),
+            _ => await AssetService.GetAllAsync()
+        };
+    }
+
+    private async Task DeleteAsset(int id)
+    {
+        if (await AssetService.DeleteAsync(id))
+        {
+            Snackbar.Add("Asset deleted.", Severity.Success);
+            await LoadAssets();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete asset.", Severity.Error);
+        }
+    }
+
+    private bool FilterAssets(AssetDto asset)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return asset.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || asset.AssetCode.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || asset.CategoryName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || asset.Source.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private enum AssetFilterType
+    {
+        All,
+        ByLocation,
+        ByCategory,
+        ByVendor,
+        BySource,
+        ByAcquisitionDate,
+        LowStock
+    }
+}

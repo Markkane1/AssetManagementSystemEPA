@@ -1,39 +1,40 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">AssetManagement.Blazor</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+﻿<AuthorizeView>
+    <Authorized>
+        <MudNavMenu Dense="true">
+            <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+            <MudNavGroup Text="Assets" Icon="@Icons.Material.Filled.Inventory2">
+                <MudNavLink Href="assets">Assets</MudNavLink>
+                <MudNavLink Href="asset-items">Asset Items</MudNavLink>
+                <MudNavLink Href="assignments">Assignments</MudNavLink>
+                <MudNavLink Href="maintenance">Maintenance Records</MudNavLink>
+            </MudNavGroup>
 
-@code {
-    private bool collapseNavMenu = true;
+            <MudNavGroup Text="Reference Data" Icon="@Icons.Material.Filled.LibraryBooks">
+                <MudNavLink Href="categories">Categories</MudNavLink>
+                <MudNavLink Href="directorates">Directorates</MudNavLink>
+                <MudNavLink Href="employees">Employees</MudNavLink>
+                <MudNavLink Href="locations">Locations</MudNavLink>
+                <MudNavLink Href="projects">Projects</MudNavLink>
+                <MudNavLink Href="purchase-orders">Purchase Orders</MudNavLink>
+                <MudNavLink Href="vendors">Vendors</MudNavLink>
+            </MudNavGroup>
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+            <MudNavLink Href="reports" Icon="@Icons.Material.Filled.Assessment">Reports</MudNavLink>
 
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}
+            <MudNavGroup Text="Administration" Icon="@Icons.Material.Filled.AdminPanelSettings">
+                <MudNavLink Href="roles">Roles</MudNavLink>
+                <MudNavLink Href="permissions">Permissions</MudNavLink>
+                <MudNavLink Href="user-access">User Access</MudNavLink>
+            </MudNavGroup>
+
+            <MudNavLink Href="account" Icon="@Icons.Material.Filled.AccountCircle">My Account</MudNavLink>
+        </MudNavMenu>
+    </Authorized>
+    <NotAuthorized>
+        <MudNavMenu Dense="true">
+            <MudNavLink Href="login">Login</MudNavLink>
+            <MudNavLink Href="register">Register</MudNavLink>
+        </MudNavMenu>
+    </NotAuthorized>
+</AuthorizeView>

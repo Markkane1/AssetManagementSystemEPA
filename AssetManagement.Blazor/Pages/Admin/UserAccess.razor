@@ -1,0 +1,64 @@
+@page "/user-access"
+@inject UserAccessService UserAccessService
+@inject LocationService LocationService
+@inject ISnackbar Snackbar
+
+<PageTitle>User Access</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">User Location Access</MudText>
+    <MudTextField @bind-Value="_userId" Label="User Id" />
+    <MudStack Row="true" Spacing="2" Class="mt-2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAccess">Load</MudButton>
+    </MudStack>
+
+    <MudSelect T="int" 
+               Label="Locations" 
+               @bind-SelectedValues="_selectedLocations" 
+               MultiSelection="true" 
+               Class="mt-4">
+        @foreach (var location in _locations)
+        {
+            <MudSelectItem Value="@location.Id">@location.Name</MudSelectItem>
+        }
+    </MudSelect>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="mt-3" OnClick="@SaveAccess">
+        Save Access
+    </MudButton>
+</MudPaper>
+
+@code {
+    private string _userId = string.Empty;
+    private List<LocationDto> _locations = [];
+    private IEnumerable<int> _selectedLocations = new HashSet<int>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _locations = await LocationService.GetAllAsync();
+    }
+
+    private async Task LoadAccess()
+    {
+        if (string.IsNullOrWhiteSpace(_userId))
+        {
+            Snackbar.Add("Provide a user id.", Severity.Warning);
+            return;
+        }
+
+        var access = await UserAccessService.GetUserLocationsAsync(_userId);
+        _selectedLocations = access.Select(item => item.LocationId).ToHashSet();
+    }
+
+    private async Task SaveAccess()
+    {
+        if (string.IsNullOrWhiteSpace(_userId))
+        {
+            Snackbar.Add("Provide a user id.", Severity.Warning);
+            return;
+        }
+
+        var success = await UserAccessService.SetUserLocationsAsync(_userId, _selectedLocations.ToList());
+        Snackbar.Add(success ? "Access updated." : "Unable to update access.", success ? Severity.Success : Severity.Error);
+    }
+}

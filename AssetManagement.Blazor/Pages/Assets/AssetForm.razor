@@ -1,0 +1,149 @@
+@page "/assets/new"
+@page "/assets/edit/{Id:int}"
+@inject AssetService AssetService
+@inject CategoryService CategoryService
+@inject VendorService VendorService
+@inject PurchaseOrderService PurchaseOrderService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Asset" : "New Asset")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Asset" : "Create Asset")</MudText>
+    <MudForm @ref="_form">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_model.AssetCode" Label="Asset Code" Required="true" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="AssetSource" Label="Source" @bind-Value="_model.Source">
+                    @foreach (var source in Enum.GetValues<AssetSource>())
+                    {
+                        <MudSelectItem Value="@source">@source</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal?" @bind-Value="_model.Price" Label="Price" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="int" @bind-Value="_model.Quantity" Label="Quantity" Required="true" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="int" @bind-Value="_model.TrackedQuantity" Label="Tracked Quantity" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="int" @bind-Value="_model.UntrackedQuantity" Label="Untracked Quantity" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int" Label="Category" @bind-Value="_model.CategoryId">
+                    @foreach (var category in _categories)
+                    {
+                        <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int?" Label="Vendor" @bind-Value="_model.VendorId">
+                    <MudSelectItem T="int?" Value="@((int?)null)">None</MudSelectItem>
+                    @foreach (var vendor in _vendors)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)vendor.Id)">@vendor.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int?" Label="Purchase Order" @bind-Value="_model.PurchaseOrderId">
+                    <MudSelectItem T="int?" Value="@((int?)null)">None</MudSelectItem>
+                    @foreach (var order in _purchaseOrders)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)order.Id)">@order.OrderNumber</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_model.PurchaseDate" Label="Purchase Date" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_model.DeliveryDate" Label="Delivery Date" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_model.Manufacturer" Label="Manufacturer" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_model.Model" Label="Model" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_model.Specification" Label="Specification" Lines="3" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Value="_model.WarrantyEndDate" Label="Warranty End Date" />
+            </MudItem>
+        </MudGrid>
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/assets"))">
+                Cancel
+            </MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private bool _isEdit => Id.HasValue;
+    private AssetDto _model = new();
+    private MudForm? _form;
+    private List<CategoryDto> _categories = [];
+    private List<VendorDto> _vendors = [];
+    private List<PurchaseOrderDto> _purchaseOrders = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await CategoryService.GetAllAsync();
+        _vendors = await VendorService.GetAllAsync();
+        _purchaseOrders = await PurchaseOrderService.GetAllAsync();
+
+        if (_isEdit)
+        {
+            var asset = await AssetService.GetByIdAsync(Id!.Value);
+            if (asset != null)
+            {
+                _model = asset;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = _isEdit
+            ? await AssetService.UpdateAsync(_model)
+            : await AssetService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Asset saved successfully.", Severity.Success);
+            NavigationManager.NavigateTo("/assets");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save asset.", Severity.Error);
+        }
+    }
+}

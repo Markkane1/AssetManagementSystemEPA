@@ -1,0 +1,72 @@
+@page "/employees"
+@inject EmployeeService EmployeeService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Employees</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Employees</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/employees/new"))">
+        Add Employee
+    </MudButton>
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search employees..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_employees" Dense="true" Hover="true" Filter="FilterEmployees">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="@(employee => employee.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(employee => employee.Email)">Email</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(employee => employee.DirectorateName)">Directorate</MudTableSortLabel></MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Email</MudTd>
+            <MudTd>@context.DirectorateName</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/employees/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteEmployee(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<EmployeeDto> _employees = [];
+    private string _searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _employees = await EmployeeService.GetAllAsync();
+    }
+
+    private async Task DeleteEmployee(int id)
+    {
+        if (await EmployeeService.DeleteAsync(id))
+        {
+            Snackbar.Add("Employee deleted.", Severity.Success);
+            _employees = await EmployeeService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete employee.", Severity.Error);
+        }
+    }
+
+    private bool FilterEmployees(EmployeeDto employee)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return employee.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || employee.Email.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || employee.DirectorateName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
+}

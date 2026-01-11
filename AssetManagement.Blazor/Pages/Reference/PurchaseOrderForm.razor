@@ -1,0 +1,81 @@
+@page "/purchase-orders/new"
+@page "/purchase-orders/edit/{Id:int}"
+@inject PurchaseOrderService PurchaseOrderService
+@inject VendorService VendorService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Purchase Order" : "New Purchase Order")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Purchase Order" : "Create Purchase Order")</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.OrderNumber" Label="Order Number" Required="true" />
+        <MudDatePicker @bind-Date="_orderDate" Label="Order Date" />
+        <MudSelect T="int" Label="Vendor" @bind-Value="_model.VendorId">
+            @foreach (var vendor in _vendors)
+            {
+                <MudSelectItem Value="@vendor.Id">@vendor.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/purchase-orders"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool _isEdit => Id.HasValue;
+    private PurchaseOrderDto _model = new();
+    private DateTime? _orderDate = DateTime.Today;
+    private MudForm? _form;
+    private List<VendorDto> _vendors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _vendors = await VendorService.GetAllAsync();
+        _orderDate = DateTime.Today;
+
+        if (_isEdit)
+        {
+            var order = await PurchaseOrderService.GetByIdAsync(Id!.Value);
+            if (order != null)
+            {
+                _model = order;
+                _orderDate = order.OrderDate;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _model.OrderDate = _orderDate ?? DateTime.Today;
+
+        var success = _isEdit
+            ? await PurchaseOrderService.UpdateAsync(_model)
+            : await PurchaseOrderService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Purchase order saved.", Severity.Success);
+            NavigationManager.NavigateTo("/purchase-orders");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save purchase order.", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,359 @@
+@page "/reports"
+@inject ReportService ReportService
+@inject ISnackbar Snackbar
+
+<PageTitle>Reports</PageTitle>
+
+<MudStack Spacing="3">
+    <MudText Typo="Typo.h5">Reports</MudText>
+
+    <MudExpansionPanels>
+        <MudExpansionPanel Text="Asset Summary by Location">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAssetSummaryByLocation">Load</MudButton>
+            <MudTable Items="@_assetSummaryByLocation" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Location</MudTh>
+                    <MudTh>Total Assets</MudTh>
+                    <MudTh>Total Value</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.LocationName</MudTd>
+                    <MudTd>@context.TotalAssets</MudTd>
+                    <MudTd>@context.TotalValue</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Asset Summary by Category">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAssetSummaryByCategory">Load</MudButton>
+            <MudTable Items="@_assetSummaryByCategory" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Category</MudTh>
+                    <MudTh>Total Assets</MudTh>
+                    <MudTh>Total Value</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.CategoryName</MudTd>
+                    <MudTd>@context.TotalAssets</MudTd>
+                    <MudTd>@context.TotalValue</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Assignment Summary by Directorate">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAssignmentSummaryByDirectorate">Load</MudButton>
+            <MudTable Items="@_assignmentSummaryByDirectorate" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Directorate</MudTh>
+                    <MudTh>Total Assignments</MudTh>
+                    <MudTh>Total Asset Items</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.DirectorateName</MudTd>
+                    <MudTd>@context.TotalAssignments</MudTd>
+                    <MudTd>@context.TotalAssetItems</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Asset Status Report">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAssetStatus">Load</MudButton>
+            <MudTable Items="@_assetStatus" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Count</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssignmentStatus</MudTd>
+                    <MudTd>@context.Count</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Maintenance History (by Asset Item)">
+            <MudNumericField T="int" Label="Asset Item Id" @bind-Value="_maintenanceAssetItemId" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadMaintenanceHistory" Class="mt-2">Load</MudButton>
+            <MudTable Items="@_maintenanceHistory" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Date</MudTh>
+                    <MudTh>Description</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Cost</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Date.ToShortDateString()</MudTd>
+                    <MudTd>@context.Description</MudTd>
+                    <MudTd>@context.Status</MudTd>
+                    <MudTd>@context.Cost</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Transfer History (by Asset Item)">
+            <MudNumericField T="int" Label="Asset Item Id" @bind-Value="_transferAssetItemId" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadTransferHistory" Class="mt-2">Load</MudButton>
+            <MudTable Items="@_transferHistory" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>From</MudTh>
+                    <MudTh>To</MudTh>
+                    <MudTh>Date</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.FromLocationId</MudTd>
+                    <MudTd>@context.ToLocationId</MudTd>
+                    <MudTd>@context.TransferDate.ToShortDateString()</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Utilization Report">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadUtilization">Load</MudButton>
+            <MudTable Items="@_utilization" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Asset</MudTh>
+                    <MudTh>Utilization</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetName</MudTd>
+                    <MudTd>@context.UtilizationRate</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Maintenance Cost Summary">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadMaintenanceCost">Load</MudButton>
+            <MudTable Items="@_maintenanceCost" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Asset</MudTh>
+                    <MudTh>Category</MudTh>
+                    <MudTh>Location</MudTh>
+                    <MudTh>Total Cost</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetId</MudTd>
+                    <MudTd>@context.CategoryId</MudTd>
+                    <MudTd>@context.LocationId</MudTd>
+                    <MudTd>@context.TotalCost</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Depreciation Report">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadDepreciation">Load</MudButton>
+            <MudTable Items="@_depreciation" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Asset</MudTh>
+                    <MudTh>Original Price</MudTh>
+                    <MudTh>Current Value</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetName</MudTd>
+                    <MudTd>@context.OriginalPrice</MudTd>
+                    <MudTd>@context.CurrentValue</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Location Transfer Summary">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadLocationTransfer">Load</MudButton>
+            <MudTable Items="@_locationTransfer" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>From</MudTh>
+                    <MudTh>To</MudTh>
+                    <MudTh>Transfers</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.FromLocationId</MudTd>
+                    <MudTd>@context.ToLocationId</MudTd>
+                    <MudTd>@context.TransferCount</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Employee Asset Value Summary">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadEmployeeAssetValue">Load</MudButton>
+            <MudTable Items="@_employeeAssetValue" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Employee</MudTh>
+                    <MudTh>Total Value</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.EmployeeName</MudTd>
+                    <MudTd>@context.TotalAssetValue</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Audit Trail (by Asset)">
+            <MudNumericField T="int" Label="Asset Id" @bind-Value="_auditAssetId" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAuditTrail" Class="mt-2">Load</MudButton>
+            <MudTable Items="@_auditTrail" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Action</MudTh>
+                    <MudTh>Date</MudTh>
+                    <MudTh>Details</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.ActionType</MudTd>
+                    <MudTd>@context.ActionDate.ToShortDateString()</MudTd>
+                    <MudTd>@context.Details</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Overstock Report">
+            <MudNumericField T="int" Label="Threshold" @bind-Value="_overstockThreshold" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadOverstock" Class="mt-2">Load</MudButton>
+            <MudTable Items="@_overstock" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Asset</MudTh>
+                    <MudTh>Quantity</MudTh>
+                    <MudTh>Threshold</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetName</MudTd>
+                    <MudTd>@context.CurrentQuantity</MudTd>
+                    <MudTd>@context.Threshold</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Maintenance Due Report">
+            <MudDatePicker @bind-Date="_maintenanceDueDate" Label="Due Date" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadMaintenanceDue" Class="mt-2">Load</MudButton>
+            <MudTable Items="@_maintenanceDue" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Asset</MudTh>
+                    <MudTh>Due Date</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetName</MudTd>
+                    <MudTd>@context.DueDate.ToShortDateString()</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Asset Assignment Report">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadAssetAssignment">Load</MudButton>
+            <MudTable Items="@_assetAssignments" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Asset</MudTh>
+                    <MudTh>Location</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetName</MudTd>
+                    <MudTd>@context.LocationName</MudTd>
+                    <MudTd>@context.AssignmentStatus</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Non-Repairable Assets">
+            <MudNumericField T="int?" Label="Location Id (optional)" @bind-Value="_nonRepairableLocationId" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadNonRepairable" Class="mt-2">Load</MudButton>
+            <MudTable Items="@_nonRepairable" Dense="true" Hover="true" Class="mt-3">
+                <HeaderContent>
+                    <MudTh>Asset</MudTh>
+                    <MudTh>Location</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetName</MudTd>
+                    <MudTd>@context.LocationName</MudTd>
+                    <MudTd>@context.ItemStatus</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+</MudStack>
+
+@code {
+    private List<AssetSummaryDto> _assetSummaryByLocation = [];
+    private List<CategorySummaryDto> _assetSummaryByCategory = [];
+    private List<DirectorateAssignmentSummaryDto> _assignmentSummaryByDirectorate = [];
+    private List<AssetStatusReportDto> _assetStatus = [];
+    private List<MaintenanceRecordDto> _maintenanceHistory = [];
+    private List<TransferHistoryDto> _transferHistory = [];
+    private List<UtilizationReportDto> _utilization = [];
+    private List<MaintenanceCostSummaryDto> _maintenanceCost = [];
+    private List<DepreciationReportDto> _depreciation = [];
+    private List<LocationTransferSummaryDto> _locationTransfer = [];
+    private List<EmployeeAssetValueSummaryDto> _employeeAssetValue = [];
+    private List<AuditTrailDto> _auditTrail = [];
+    private List<OverstockReportDto> _overstock = [];
+    private List<MaintenanceDueReportDto> _maintenanceDue = [];
+    private List<AssetAssignmentReportDto> _assetAssignments = [];
+    private List<NonRepairableAssetReportDto> _nonRepairable = [];
+
+    private int _maintenanceAssetItemId;
+    private int _transferAssetItemId;
+    private int _auditAssetId;
+    private int _overstockThreshold = 1;
+    private DateTime? _maintenanceDueDate = DateTime.Today;
+    private int? _nonRepairableLocationId;
+
+    private async Task LoadAssetSummaryByLocation() => _assetSummaryByLocation = await ReportService.GetAssetSummaryByLocationAsync();
+    private async Task LoadAssetSummaryByCategory() => _assetSummaryByCategory = await ReportService.GetAssetSummaryByCategoryAsync();
+    private async Task LoadAssignmentSummaryByDirectorate() => _assignmentSummaryByDirectorate = await ReportService.GetAssignmentSummaryByDirectorateAsync();
+    private async Task LoadAssetStatus() => _assetStatus = await ReportService.GetAssetStatusReportAsync();
+
+    private async Task LoadMaintenanceHistory()
+    {
+        if (_maintenanceAssetItemId <= 0)
+        {
+            Snackbar.Add("Provide an asset item id.", Severity.Warning);
+            return;
+        }
+        _maintenanceHistory = await ReportService.GetMaintenanceHistoryAsync(_maintenanceAssetItemId);
+    }
+
+    private async Task LoadTransferHistory()
+    {
+        if (_transferAssetItemId <= 0)
+        {
+            Snackbar.Add("Provide an asset item id.", Severity.Warning);
+            return;
+        }
+        _transferHistory = await ReportService.GetTransferHistoryAsync(_transferAssetItemId);
+    }
+
+    private async Task LoadUtilization() => _utilization = await ReportService.GetUtilizationAsync();
+    private async Task LoadMaintenanceCost() => _maintenanceCost = await ReportService.GetMaintenanceCostAsync();
+    private async Task LoadDepreciation() => _depreciation = await ReportService.GetDepreciationAsync();
+    private async Task LoadLocationTransfer() => _locationTransfer = await ReportService.GetLocationTransferSummaryAsync();
+    private async Task LoadEmployeeAssetValue() => _employeeAssetValue = await ReportService.GetEmployeeAssetValueSummaryAsync();
+
+    private async Task LoadAuditTrail()
+    {
+        if (_auditAssetId <= 0)
+        {
+            Snackbar.Add("Provide an asset id.", Severity.Warning);
+            return;
+        }
+        _auditTrail = await ReportService.GetAuditTrailAsync(_auditAssetId);
+    }
+
+    private async Task LoadOverstock()
+    {
+        if (_overstockThreshold <= 0)
+        {
+            Snackbar.Add("Provide a threshold.", Severity.Warning);
+            return;
+        }
+        _overstock = await ReportService.GetOverstockAsync(_overstockThreshold);
+    }
+
+    private async Task LoadMaintenanceDue()
+    {
+        if (!_maintenanceDueDate.HasValue)
+        {
+            Snackbar.Add("Provide a due date.", Severity.Warning);
+            return;
+        }
+        _maintenanceDue = await ReportService.GetMaintenanceDueAsync(_maintenanceDueDate.Value);
+    }
+
+    private async Task LoadAssetAssignment() => _assetAssignments = await ReportService.GetAssetAssignmentAsync();
+    private async Task LoadNonRepairable() => _nonRepairable = await ReportService.GetNonRepairableAsync(_nonRepairableLocationId);
+}

@@ -1,0 +1,71 @@
+@page "/purchase-orders"
+@inject PurchaseOrderService PurchaseOrderService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Purchase Orders</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Purchase Orders</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/purchase-orders/new"))">
+        Add Purchase Order
+    </MudButton>
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search purchase orders..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_orders" Dense="true" Hover="true" Filter="FilterOrders">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="@(order => order.OrderNumber)">Order Number</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(order => order.OrderDate)">Order Date</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(order => order.VendorName)">Vendor</MudTableSortLabel></MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.OrderNumber</MudTd>
+            <MudTd>@context.OrderDate.ToShortDateString()</MudTd>
+            <MudTd>@context.VendorName</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/purchase-orders/edit/{context.Id}"))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => DeleteOrder(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudStack>
+
+@code {
+    private List<PurchaseOrderDto> _orders = [];
+    private string _searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _orders = await PurchaseOrderService.GetAllAsync();
+    }
+
+    private async Task DeleteOrder(int id)
+    {
+        if (await PurchaseOrderService.DeleteAsync(id))
+        {
+            Snackbar.Add("Purchase order deleted.", Severity.Success);
+            _orders = await PurchaseOrderService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add("Unable to delete purchase order.", Severity.Error);
+        }
+    }
+
+    private bool FilterOrders(PurchaseOrderDto order)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return order.OrderNumber.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || (order.VendorName?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+}

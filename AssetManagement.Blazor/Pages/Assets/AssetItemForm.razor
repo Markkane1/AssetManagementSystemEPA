@@ -1,0 +1,112 @@
+@page "/asset-items/new"
+@page "/asset-items/edit/{Id:int}"
+@inject AssetItemService AssetItemService
+@inject AssetService AssetService
+@inject LocationService LocationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Asset Item" : "New Asset Item")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Asset Item" : "Create Asset Item")</MudText>
+    <MudForm @ref="_form">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int" Label="Asset" @bind-Value="_model.AssetId">
+                    @foreach (var asset in _assets)
+                    {
+                        <MudSelectItem Value="@asset.Id">@asset.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="int" Label="Location" @bind-Value="_model.LocationId">
+                    @foreach (var location in _locations)
+                    {
+                        <MudSelectItem Value="@location.Id">@location.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_model.SerialNumber" Label="Serial Number" Required="true" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_model.Tag" Label="Tag" Required="true" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="ItemStatus" Label="Status" @bind-Value="_model.Status">
+                    @foreach (var status in Enum.GetValues<ItemStatus>())
+                    {
+                        <MudSelectItem Value="@status">@status</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="ItemSource" Label="Source" @bind-Value="_model.Source">
+                    @foreach (var source in Enum.GetValues<ItemSource>())
+                    {
+                        <MudSelectItem Value="@source">@source</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/asset-items"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private bool _isEdit => Id.HasValue;
+    private AssetItemDto _model = new();
+    private MudForm? _form;
+    private List<AssetDto> _assets = [];
+    private List<LocationDto> _locations = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _assets = await AssetService.GetAllAsync();
+        _locations = await LocationService.GetAllAsync();
+
+        if (_isEdit)
+        {
+            var item = await AssetItemService.GetByIdAsync(Id!.Value);
+            if (item != null)
+            {
+                _model = item;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = _isEdit
+            ? await AssetItemService.UpdateAsync(_model)
+            : await AssetItemService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Asset item saved.", Severity.Success);
+            NavigationManager.NavigateTo("/asset-items");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save asset item.", Severity.Error);
+        }
+    }
+}

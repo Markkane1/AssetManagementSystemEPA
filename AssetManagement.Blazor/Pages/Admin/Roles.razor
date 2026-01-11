@@ -1,0 +1,166 @@
+@page "/roles"
+@inject RoleService RoleService
+@inject PermissionCatalogService PermissionCatalogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Roles</PageTitle>
+
+<MudGrid>
+    <MudItem xs="12" md="4">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6">Roles</MudText>
+            <MudList T="string" Dense="true">
+                @foreach (var role in _roles)
+                {
+                    <MudListItem Selected="@(_selectedRole == role)" OnClick="@(() => SelectRole(role))">
+                        @role
+                    </MudListItem>
+                }
+            </MudList>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="8">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6">Role Permissions</MudText>
+            @if (string.IsNullOrWhiteSpace(_selectedRole))
+            {
+                <MudText>Select a role to manage permissions.</MudText>
+            }
+            else
+            {
+                <MudSelect T="PermissionDto" Label="Assign Permission" @bind-Value="_permissionToAssign">
+                    @foreach (var permission in _permissions)
+                    {
+                        <MudSelectItem Value="@permission">@permission.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-2" OnClick="@AssignPermission">Assign</MudButton>
+
+                <MudTable Items="@_rolePermissions" Dense="true" Hover="true" Class="mt-4">
+                    <HeaderContent>
+                        <MudTh>Permission</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.PermissionName</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                           OnClick="@(() => RevokePermission(context.PermissionId))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudPaper Class="pa-4 mt-4">
+    <MudText Typo="Typo.h6">User Role Assignment</MudText>
+    <MudTextField @bind-Value="_userId" Label="User Id" />
+    <MudSelect T="string" Label="Role" @bind-Value="_roleForUser" Class="mt-2">
+        @foreach (var role in _roles)
+        {
+            <MudSelectItem Value="@role">@role</MudSelectItem>
+        }
+    </MudSelect>
+    <MudStack Row="true" Spacing="2" Class="mt-2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@AddUserToRole">Add</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@RemoveUserFromRole">Remove</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@LoadUserRoles">Load Roles</MudButton>
+    </MudStack>
+    <MudChipSet T="string" Class="mt-2">
+        @foreach (var role in _userRoles)
+        {
+            <MudChip T="string">@role</MudChip>
+        }
+    </MudChipSet>
+</MudPaper>
+
+@code {
+    private List<string> _roles = [];
+    private string? _selectedRole;
+    private List<RolePermissionDto> _rolePermissions = [];
+    private List<PermissionDto> _permissions = [];
+    private PermissionDto? _permissionToAssign;
+    private string _userId = string.Empty;
+    private string _roleForUser = string.Empty;
+    private List<string> _userRoles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _roles = await RoleService.GetRolesAsync();
+        _permissions = await PermissionCatalogService.GetAllAsync();
+    }
+
+    private async Task SelectRole(string role)
+    {
+        _selectedRole = role;
+        _rolePermissions = await RoleService.GetRolePermissionsAsync(role);
+    }
+
+    private async Task AssignPermission()
+    {
+        if (_selectedRole is null || _permissionToAssign is null)
+        {
+            Snackbar.Add("Select a role and permission.", Severity.Warning);
+            return;
+        }
+
+        var success = await RoleService.AssignPermissionAsync(_selectedRole, _permissionToAssign.Id);
+        Snackbar.Add(success ? "Permission assigned." : "Unable to assign permission.", success ? Severity.Success : Severity.Error);
+        if (success)
+        {
+            _rolePermissions = await RoleService.GetRolePermissionsAsync(_selectedRole);
+        }
+    }
+
+    private async Task RevokePermission(int permissionId)
+    {
+        if (_selectedRole is null)
+        {
+            return;
+        }
+
+        var success = await RoleService.RevokePermissionAsync(_selectedRole, permissionId);
+        Snackbar.Add(success ? "Permission revoked." : "Unable to revoke permission.", success ? Severity.Success : Severity.Error);
+        if (success)
+        {
+            _rolePermissions = await RoleService.GetRolePermissionsAsync(_selectedRole);
+        }
+    }
+
+    private async Task AddUserToRole()
+    {
+        if (string.IsNullOrWhiteSpace(_userId) || string.IsNullOrWhiteSpace(_roleForUser))
+        {
+            Snackbar.Add("Provide user id and role.", Severity.Warning);
+            return;
+        }
+
+        var success = await RoleService.AddUserToRoleAsync(_userId, _roleForUser);
+        Snackbar.Add(success ? "User added to role." : "Unable to add user to role.", success ? Severity.Success : Severity.Error);
+    }
+
+    private async Task RemoveUserFromRole()
+    {
+        if (string.IsNullOrWhiteSpace(_userId) || string.IsNullOrWhiteSpace(_roleForUser))
+        {
+            Snackbar.Add("Provide user id and role.", Severity.Warning);
+            return;
+        }
+
+        var success = await RoleService.RemoveUserFromRoleAsync(_userId, _roleForUser);
+        Snackbar.Add(success ? "User removed from role." : "Unable to remove user from role.", success ? Severity.Success : Severity.Error);
+    }
+
+    private async Task LoadUserRoles()
+    {
+        if (string.IsNullOrWhiteSpace(_userId))
+        {
+            Snackbar.Add("Provide user id.", Severity.Warning);
+            return;
+        }
+
+        _userRoles = await RoleService.GetUserRolesAsync(_userId);
+    }
+}

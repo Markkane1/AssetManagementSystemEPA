@@ -1,0 +1,46 @@
+@page "/permissions"
+@inject PermissionCatalogService PermissionCatalogService
+
+@* Define the constant for "__all__" *@
+@code {
+    private const string AllCategory = "__all__";
+    private List<string> _categories = [];
+    private string _selectedCategory = AllCategory;
+    private List<PermissionDto> _permissions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await PermissionCatalogService.GetCategoriesAsync();
+        await LoadPermissions();
+    }
+
+    private async Task LoadPermissions()
+    {
+        _permissions = _selectedCategory == AllCategory
+            ? await PermissionCatalogService.GetAllAsync()
+            : await PermissionCatalogService.GetByCategoryAsync(_selectedCategory);
+    }
+}
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Permissions Catalog</MudText>
+    <MudSelect T="string" Label="Category" @bind-Value="_selectedCategory">
+        <MudSelectItem Value="@AllCategory">All</MudSelectItem>
+        @foreach (var category in _categories)
+        {
+            <MudSelectItem Value="@category">@category</MudSelectItem>
+        }
+    </MudSelect>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@LoadPermissions">Load</MudButton>
+    <MudTable Items="@_permissions" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Description</MudTh>
+            <MudTh>Category</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Description</MudTd>
+            <MudTd>@context.Category</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>

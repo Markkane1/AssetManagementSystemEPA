@@ -1,0 +1,67 @@
+@page "/locations/new"
+@page "/locations/edit/{Id:int}"
+@inject LocationService LocationService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Location" : "New Location")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Location" : "Create Location")</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
+        <MudSwitch T="bool" @bind-Checked="_model.IsHeadOffice" Color="Color.Primary" Label="Head Office" Class="mt-2" />
+        <MudTextField @bind-Value="_model.District" Label="District" />
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/locations"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool _isEdit => Id.HasValue;
+    private LocationDto _model = new();
+    private MudForm? _form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_isEdit)
+        {
+            var location = await LocationService.GetByIdAsync(Id!.Value);
+            if (location != null)
+            {
+                _model = location;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var success = _isEdit
+            ? await LocationService.UpdateAsync(_model)
+            : await LocationService.CreateAsync(_model) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Location saved.", Severity.Success);
+            NavigationManager.NavigateTo("/locations");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save location.", Severity.Error);
+        }
+    }
+}

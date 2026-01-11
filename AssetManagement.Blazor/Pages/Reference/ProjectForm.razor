@@ -1,0 +1,83 @@
+@page "/projects/new"
+@page "/projects/edit/{Id:int}"
+@inject ProjectService ProjectService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isEdit ? "Edit Project" : "New Project")</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudText Typo="Typo.h5" Class="mb-4">@(_isEdit ? "Edit Project" : "Create Project")</MudText>
+    <MudForm @ref="_form">
+        <MudTextField @bind-Value="_model.Name" Label="Name" Required="true" />
+        <MudTextField @bind-Value="_model.ProjectRunBy" Label="Project Run By" Required="true" />
+        <MudTextField @bind-Value="_model.ProjectDescription" Label="Description" Lines="3" />
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@SaveAsync">Save</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/projects"))">Cancel</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool _isEdit => Id.HasValue;
+    private ProjectFormModel _model = new();
+    private MudForm? _form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_isEdit)
+        {
+            var project = await ProjectService.GetByIdAsync(Id!.Value);
+            if (project != null)
+            {
+                _model = new ProjectFormModel
+                {
+                    Id = project.Id,
+                    Name = project.Name,
+                    ProjectDescription = project.ProjectDescription,
+                    ProjectRunBy = project.ProjectRunBy
+                };
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var dto = new ProjectDto(_model.Id, _model.Name, _model.ProjectDescription, _model.ProjectRunBy);
+
+        var success = _isEdit
+            ? await ProjectService.UpdateAsync(dto)
+            : await ProjectService.CreateAsync(dto) != null;
+
+        if (success)
+        {
+            Snackbar.Add("Project saved.", Severity.Success);
+            NavigationManager.NavigateTo("/projects");
+        }
+        else
+        {
+            Snackbar.Add("Unable to save project.", Severity.Error);
+        }
+    }
+
+    private sealed class ProjectFormModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ProjectDescription { get; set; } = string.Empty;
+        public string ProjectRunBy { get; set; } = string.Empty;
+    }
+}
