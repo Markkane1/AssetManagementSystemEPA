@@ -1,5 +1,5 @@
-@page "/register"
 @attribute [AllowAnonymous]
+@page "/register"
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
@@ -12,10 +12,12 @@
         <MudTextField @bind-Value="_model.FirstName" Label="First Name" Required="true" />
         <MudTextField @bind-Value="_model.LastName" Label="Last Name" Required="true" />
         <MudTextField @bind-Value="_model.Password" Label="Password" InputType="InputType.Password" Required="true" />
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@HandleRegister" Class="mt-4" FullWidth="true">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@HandleRegister" Class="mt-4"
+            FullWidth="true">
             Register
         </MudButton>
-        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/login"))" Class="mt-2" FullWidth="true">
+        <MudButton Variant="Variant.Text" Color="Color.Primary"
+            OnClick="@(() => NavigationManager.NavigateTo("/login"))" Class="mt-2" FullWidth="true">
             Back to login
         </MudButton>
     </MudForm>

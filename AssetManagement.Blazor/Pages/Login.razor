@@ -1,5 +1,5 @@
-@page "/login"
 @attribute [AllowAnonymous]
+@page "/login"
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
@@ -12,7 +12,8 @@
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@HandleLogin" Class="mt-4" FullWidth="true">
             Login
         </MudButton>
-        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/register"))" Class="mt-2" FullWidth="true">
+        <MudButton Variant="Variant.Text" Color="Color.Primary"
+            OnClick="@(() => NavigationManager.NavigateTo("/register"))" Class="mt-2" FullWidth="true">
             Create an account
         </MudButton>
     </MudForm>

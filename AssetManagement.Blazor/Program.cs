@@ -28,6 +28,7 @@ namespace AssetManagement.Blazor
                     .Build();
             });
             builder.Services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
+            builder.Services.AddScoped<AuthStateProvider>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<ApiAuthMessageHandler>();
             builder.Services.AddScoped<PermissionService>();
