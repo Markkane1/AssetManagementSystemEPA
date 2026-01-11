@@ -20,7 +20,7 @@ cp .env.example .env.local
 Set the API base URL to your backend:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5027
 ```
 
 ## Development
