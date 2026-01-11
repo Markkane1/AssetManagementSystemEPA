@@ -1,8 +1,12 @@
 ﻿@page "/"
+@using System.Linq
 
 <PageTitle>Dashboard</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Asset Management Dashboard</MudText>
+<MudStack Spacing="1" Class="mb-4">
+    <MudText Typo="Typo.h4">Asset Management Dashboard</MudText>
+    <MudText Typo="Typo.subtitle2">Quick overview of assets, assignments, and maintenance.</MudText>
+</MudStack>
 
 <MudGrid>
     <MudItem xs="12" sm="6" md="3">
@@ -29,6 +33,12 @@
             <MudText Typo="Typo.h5">@_maintenanceCount</MudText>
         </MudPaper>
     </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.subtitle1">Overdue Assignments</MudText>
+            <MudText Typo="Typo.h5">@_overdueAssignments</MudText>
+        </MudPaper>
+    </MudItem>
 </MudGrid>
 
 <MudDivider Class="my-4" />
@@ -41,6 +51,45 @@
     <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="reports">View Reports</MudButton>
 </MudStack>
 
+<MudDivider Class="my-4" />
+
+<MudGrid>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6">Recent Assets</MudText>
+            <MudTable Items="@_recentAssets" Dense="true" Hover="true" Class="mt-2">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Category</MudTh>
+                    <MudTh>Quantity</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.CategoryName</MudTd>
+                    <MudTd>@context.Quantity</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6">Recent Maintenance</MudText>
+            <MudTable Items="@_recentMaintenance" Dense="true" Hover="true" Class="mt-2">
+                <HeaderContent>
+                    <MudTh>Asset Item</MudTh>
+                    <MudTh>Date</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.AssetItemId</MudTd>
+                    <MudTd>@context.Date.ToShortDateString()</MudTd>
+                    <MudTd>@context.Status</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
 @code {
     [Inject] public AssetService AssetService { get; set; } = default!;
     [Inject] public AssetItemService AssetItemService { get; set; } = default!;
@@ -51,12 +100,24 @@
     private int _assetItemCount;
     private int _assignmentCount;
     private int _maintenanceCount;
+    private int _overdueAssignments;
+    private List<AssetDto> _recentAssets = [];
+    private List<MaintenanceRecordDto> _recentMaintenance = [];
 
     protected override async Task OnInitializedAsync()
     {
-        _assetCount = (await AssetService.GetAllAsync()).Count;
-        _assetItemCount = (await AssetItemService.GetAllAsync()).Count;
-        _assignmentCount = (await AssignmentService.GetAllAsync()).Count;
-        _maintenanceCount = (await MaintenanceRecordService.GetAllAsync()).Count;
+        var assets = await AssetService.GetAllAsync();
+        var assetItems = await AssetItemService.GetAllAsync();
+        var assignments = await AssignmentService.GetAllAsync();
+        var maintenanceRecords = await MaintenanceRecordService.GetAllAsync();
+        var overdueAssignments = await AssignmentService.GetOverdueAsync();
+
+        _assetCount = assets.Count;
+        _assetItemCount = assetItems.Count;
+        _assignmentCount = assignments.Count;
+        _maintenanceCount = maintenanceRecords.Count;
+        _overdueAssignments = overdueAssignments.Count;
+        _recentAssets = assets.OrderByDescending(asset => asset.Id).Take(5).ToList();
+        _recentMaintenance = maintenanceRecords.OrderByDescending(record => record.Date).Take(5).ToList();
     }
 }

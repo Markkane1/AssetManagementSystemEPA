@@ -81,13 +81,16 @@
         </MudStack>
     </MudPaper>
 
-    <MudTable Items="@_assets" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search assets..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+
+    <MudTable Items="@_assets" Dense="true" Hover="true" Filter="FilterAssets">
         <HeaderContent>
-            <MudTh>Name</MudTh>
-            <MudTh>Asset Code</MudTh>
-            <MudTh>Category</MudTh>
-            <MudTh>Quantity</MudTh>
-            <MudTh>Source</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.AssetCode)">Asset Code</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.CategoryName)">Category</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.Quantity)">Quantity</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(asset => asset.Source)">Source</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -103,6 +106,9 @@
                                OnClick="@(() => DeleteAsset(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
@@ -121,6 +127,7 @@
     private int _threshold = 1;
     private DateTime? _startDate;
     private DateTime? _endDate;
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -161,6 +168,19 @@
         {
             Snackbar.Add("Unable to delete asset.", Severity.Error);
         }
+    }
+
+    private bool FilterAssets(AssetDto asset)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return asset.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || asset.AssetCode.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || asset.CategoryName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || asset.Source.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
     }
 
     private enum AssetFilterType

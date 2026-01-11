@@ -10,11 +10,13 @@
     <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/employees/new"))">
         Add Employee
     </MudButton>
-    <MudTable Items="@_employees" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search employees..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_employees" Dense="true" Hover="true" Filter="FilterEmployees">
         <HeaderContent>
-            <MudTh>Name</MudTh>
-            <MudTh>Email</MudTh>
-            <MudTh>Directorate</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(employee => employee.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(employee => employee.Email)">Email</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(employee => employee.DirectorateName)">Directorate</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -28,11 +30,15 @@
                                OnClick="@(() => DeleteEmployee(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<EmployeeDto> _employees = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,5 +56,17 @@
         {
             Snackbar.Add("Unable to delete employee.", Severity.Error);
         }
+    }
+
+    private bool FilterEmployees(EmployeeDto employee)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return employee.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || employee.Email.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+               || employee.DirectorateName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
     }
 }

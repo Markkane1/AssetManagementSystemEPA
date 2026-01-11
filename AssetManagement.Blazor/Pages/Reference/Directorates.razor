@@ -10,9 +10,11 @@
     <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/directorates/new"))">
         Add Directorate
     </MudButton>
-    <MudTable Items="@_directorates" Dense="true" Hover="true">
+    <MudTextField @bind-Value="_searchTerm" Placeholder="Search directorates..." Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+    <MudTable Items="@_directorates" Dense="true" Hover="true" Filter="FilterDirectorates">
         <HeaderContent>
-            <MudTh>Name</MudTh>
+            <MudTh><MudTableSortLabel SortBy="@(directorate => directorate.Name)">Name</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -24,11 +26,15 @@
                                OnClick="@(() => DeleteDirectorate(context.Id))" />
             </MudTd>
         </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
     </MudTable>
 </MudStack>
 
 @code {
     private List<DirectorateDto> _directorates = [];
+    private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,5 +52,15 @@
         {
             Snackbar.Add("Unable to delete directorate.", Severity.Error);
         }
+    }
+
+    private bool FilterDirectorates(DirectorateDto directorate)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            return true;
+        }
+
+        return directorate.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase);
     }
 }
